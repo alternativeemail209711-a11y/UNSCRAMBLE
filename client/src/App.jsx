@@ -134,6 +134,7 @@ function diagText(d, age) {
     d.status === 'connected' ? `Connected for: ${fmtDur(d.connectedForMs + age)}` : d.status === 'waiting' ? `Next retry in: ${Math.max(0, Math.ceil((d.retryInMs - age) / 1000))}s (attempt ${d.attempts})` : `Retry attempts: ${d.attempts}`,
     `Sign key: ${d.key.set ? 'found in ' + d.key.source + ' (hidden)' : 'NOT SET (EULERSTREAM_API_KEY / TIKTOK_SIGN_API_KEY)'}`,
     `TikTok library: ${d.lib.version} ${d.lib.loaded ? '(loaded)' : '(NOT LOADED: ' + d.lib.loadError + ')'}`,
+    `Word bank: ${d.words.toLocaleString()} accepted English words`,
     `Node ${d.node} | server up ${fmtDur(d.uptimeSec * 1000 + age)}`,
     `Chat events: ${d.counts.chat} received, ${d.counts.parsed} read, ${d.counts.dropped} unreadable`,
     `Last chat: ${ago(d.lastChatAgoMs)}${d.lastChat ? ` - @${d.lastChat.user}: ${d.lastChat.text}` : ''}`,

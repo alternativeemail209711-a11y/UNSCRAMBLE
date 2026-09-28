@@ -44,15 +44,19 @@ function addLog(m) { m = redact(m); logs.push({ t: Date.now(), m }); if (logs.le
 // ---------- puzzle DB ----------
 const dbFile = fs.existsSync(R('data/puzzles.full.json')) ? R('data/puzzles.full.json') : R('data/puzzles.sample.json');
 const DB = JSON.parse(fs.readFileSync(dbFile, 'utf8'));
-// English word bank: data/words.full.txt (if you ran `npm run words`) else data/words.txt, one word per line.
+// English word bank. data/words.txt = curated puzzle answers (bundled, 112k verified words).
+// data/words.full.txt (built by `npm run words`, also run automatically on deploy when the host has internet) = extra accepted words.
+// Puzzles are picked from the curated list; a guess is accepted if it is ANY real word in the merged list that uses the same letters.
 const WORDS_CAT = 'ENGLISH WORDS';
-const wordFile = fs.existsSync(R('data/words.full.txt')) ? R('data/words.full.txt') : R('data/words.txt');
-const WORDSET = new Set();
-try { for (const w of fs.readFileSync(wordFile, 'utf8').split(/\r?\n/)) { const u = w.trim().toUpperCase(); if (/^[A-Z]{3,25}$/.test(u)) WORDSET.add(u); } } catch {}
-if (WORDSET.size) DB[WORDS_CAT] = [...WORDSET];
+const readWords = f => { const out = []; try { for (const w of fs.readFileSync(f, 'utf8').split(/\r?\n/)) { const u = w.trim().toUpperCase(); if (/^[A-Z]{3,25}$/.test(u)) out.push(u); } } catch {} return out; };
+const POOL = readWords(R('data/words.txt'));
+const WORDSET = new Set(POOL);
+const FULL_FILE = R('data/words.full.txt');
+if (fs.existsSync(FULL_FILE)) for (const w of readWords(FULL_FILE)) WORDSET.add(w);
+if (POOL.length) DB[WORDS_CAT] = POOL;
 const CATS = Object.keys(DB).filter(c => DB[c].length);
 const sortKey = w => [...w].sort().join('');
-console.log(`Loaded ${CATS.length} categories from ${path.basename(dbFile)} + ${WORDSET.size} English words (${path.basename(wordFile)})`);
+console.log(`Loaded ${CATS.length} categories from ${path.basename(dbFile)} | word bank: ${POOL.length} puzzle words, ${WORDSET.size} accepted words`);
 
 // ---------- host-adjustable game settings ----------
 const DEF = { roundSeconds: +process.env.ROUND_SECONDS || 90, revealSeconds: 10, minLetters: 5, maxLetters: 25,
@@ -370,7 +374,7 @@ const liveSnap = () => ({
   connectedForMs: live.connectedAt ? Date.now() - live.connectedAt : 0, error: live.error, warning: live.warning,
   counts: live.counts, lastChatAgoMs: live.lastChatAt ? Date.now() - live.lastChatAt : null, lastChat: live.lastChat,
   key: { set: !!SIGN_KEY, source: KEY_SRC }, lib: { version: LIB_VERSION, loaded: !!TT.TikTokLiveConnection, loadError: redact(ttLoadError) },
-  node: process.versions.node, uptimeSec: Math.round(process.uptime()), sim: live.sim, storage: { dir: DATA_DIR, ok: persist.ok, error: persist.lastError },
+  words: WORDSET.size, node: process.versions.node, uptimeSec: Math.round(process.uptime()), sim: live.sim, storage: { dir: DATA_DIR, ok: persist.ok, error: persist.lastError },
   allTimePlayers: allTime.size, log: logs.slice(-15).map(l => ({ agoMs: Date.now() - l.t, m: l.m }))
 });
 let liveT = null;
@@ -424,7 +428,7 @@ io.on('connection', socket => {
 
 const dist = R('client/dist');
 app.get('/health', (_, res) => res.send('ok'));
-app.get('/api/status', (_, res) => res.json({ ok: true, mode: live.mode, status: live.status, phase: state.phase, round, players: { session: session.size, allTime: allTime.size }, words: WORDSET.size }));
+app.get('/api/status', (_, res) => res.json({ ok: true, mode: live.mode, status: live.status, phase: state.phase, round, players: { session: session.size, allTime: allTime.size }, words: { puzzle: POOL.length, accepted: WORDSET.size, meets450k: WORDSET.size >= 450000 } }));
 app.use(express.static(dist));
 app.use((_, res) => res.sendFile(path.join(dist, 'index.html')));
 

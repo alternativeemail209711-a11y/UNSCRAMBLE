@@ -49,9 +49,11 @@ npm start            # http://localhost:3000
 ```
 
 ## English word bank
-- Bundled: **112,440 verified English words** (`data/words.txt`, common words + inflections, no proper nouns/acronyms) as the toggleable **ENGLISH WORDS** category. In that category **any valid dictionary anagram wins**, not only the exact target word.
-- Honest limit: 450,000+ *strictly valid* single English words is more than any standard open list contains (Collins Scrabble is ~280k, dwyl/english-words ~370k and includes obscure entries), so the bundled file is not padded.
-- Want the biggest list possible? Run `npm run words` on a machine with internet: it merges the bundled words with the public dwyl list into `data/words.full.txt` (auto-loaded, commit it).
+- **Puzzles** come from a curated, bundled list of **112,440 verified English words** (`data/words.txt`: common words + inflections, no proper nouns/acronyms) as the toggleable **ENGLISH WORDS** category.
+- **Guesses** are checked against a bigger *accepted* list: in that category **any real word that uses the same letters wins**, not only the target.
+- On deploy, `postinstall` runs `generate_words.js --soft`, which downloads the public dwyl / SOWPODS / ENABLE lists (when the host has internet) and merges them into `data/words.full.txt`, which is auto-loaded. It never breaks the build if a download fails. Re-run any time with `npm run words`.
+- Check the real number: Live tab -> Diagnostics ("Word bank: N accepted English words") or `/api/status` (`words.accepted`, `words.meets450k`).
+- Honest limit: open lists total roughly 350-400k distinct strictly-valid words after merging (Collins ~280k, dwyl ~370k), so 450,000 is likely *not* reachable without padding with non-words, proper nouns or phrases. The game reports the true count rather than hiding it.
 
 ## Big puzzle database
 `node generate_db.js` -> `data/puzzles.full.json` (auto-loaded when present).

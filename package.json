@@ -3,7 +3,7 @@
   "version": "2.0.0",
   "main": "server.js",
   "scripts": {
-    "postinstall": "cd client && npm install && npm run build",
+    "postinstall": "node generate_words.js --soft && cd client && npm install && npm run build",
     "start": "node server.js",
     "dev": "node server.js",
     "words": "node generate_words.js",

@@ -17,6 +17,7 @@ const DEFAULTS = { theme: 'cotton', font: 'cute', fontScale: 100, tileShape: 'ro
   footer: 'Type the correct word(s) in the chat to win!', reduceMotion: false, showTitle: true, showCategory: true, showTimer: true,
   showHint: true, showPopup: true, showLb: true, showFeed: true, showFooter: true, feedLines: 4, lbRows: 3, feedAvatars: true,
   popupSecs: 8, z1: 20, z2: 28, z4: 12, sound: false, volume: 60 };
+const loadDefaults = () => { try { return { ...DEFAULTS, ...JSON.parse(localStorage.getItem('ul-defaults') || '{}') }; } catch { return DEFAULTS; } };
 const tg = (k, l) => ({ k, l, t: 'toggle' });
 const rg = (k, l, min, max, step = 1, u = '') => ({ k, l, t: 'range', min, max, step, u });
 const FIELDS = {
@@ -54,20 +55,13 @@ function beep(vol, notes) {
   } catch { /* audio not available */ }
 }
 
-// Largest tile size (px) so every word fits in W x H; words wrap as whole words, and inside a word only if it alone is wider than the board.
-function fitTile(lens, W, H) {
-  W *= 0.96;
-  for (let s = 80; s >= 12; s--) {
-    const cell = s * 1.12, gap = s * 0.45, per = Math.max(1, Math.floor(W / cell));
-    let lines = 1, x = 0;
-    for (const n of lens) {
-      const w = n * cell;
-      if (w > W) { if (x > 0) lines++; lines += Math.ceil(n / per) - 1; x = W; continue; }
-      if (x === 0) x = w; else if (x + gap + w <= W) x += gap + w; else { lines++; x = w; }
-    }
-    if (lines * cell + (lines - 1) * gap <= H * 0.96) return s;
-  }
-  return 12;
+// STRICT ONE-ROW RULE: every letter of every word sits in ONE single row. The tile size is calculated from the row width
+// (letters + small gaps inside words + bigger gaps between words), so the row always fits - long answers simply get smaller tiles.
+const LETTER_GAP = 0.08, WORD_GAP = 0.5;
+function rowTile(lens, W, H) {
+  const L = lens.reduce((a, b) => a + b, 0), n = lens.length;
+  const units = L + LETTER_GAP * (L - n) + WORD_GAP * (n - 1);
+  return Math.max(4, Math.floor(Math.min((W * 0.96) / units, H * 0.78, 90)));
 }
 
 function Avatar({ pic, name, size }) {
@@ -82,12 +76,14 @@ function Board({ text, solved, scale }) {
   const ref = useRef(null);
   const [box, setBox] = useState({ w: 320, h: 200 });
   useLayoutEffect(() => {
-    const ro = new ResizeObserver(([e]) => setBox({ w: e.contentRect.width, h: e.contentRect.height }));
-    ro.observe(ref.current);
+    const el = ref.current;
+    const measure = () => setBox({ w: el.clientWidth, h: el.clientHeight });
+    measure();
+    const ro = new ResizeObserver(measure); ro.observe(el);
     return () => ro.disconnect();
   }, []);
-  const words = text.split(' ');
-  const t = Math.max(12, Math.round(fitTile(words.map(w => w.length), box.w, box.h) * scale / 100));
+  const words = text.split(' ').filter(Boolean);
+  const t = Math.max(4, Math.floor(rowTile(words.map(w => w.length), box.w, box.h) * scale / 100));   // scale is <= 100, so it can only shrink
   return (
     <div className="board" ref={ref} style={{ '--t': t + 'px' }}>
       <div className="words" key={text}>
@@ -101,6 +97,24 @@ function Board({ text, solved, scale }) {
   );
 }
 
+// One-row text: never wraps, never truncated - the font shrinks until the whole text fits the available width
+function FitText({ as: Tag = 'div', className, children, dep }) {
+  const ref = useRef(null);
+  useLayoutEffect(() => {
+    const el = ref.current; if (!el) return;
+    const fit = () => {
+      el.style.fontSize = '';
+      const px = parseFloat(getComputedStyle(el).fontSize);
+      if (el.scrollWidth > el.clientWidth + 1) el.style.fontSize = Math.max(6, px * el.clientWidth / el.scrollWidth * 0.97) + 'px';
+    };
+    fit();
+    const ro = new ResizeObserver(fit); ro.observe(el.parentElement);
+    return () => ro.disconnect();
+  }, [dep]);   // eslint-disable-line
+  return <Tag ref={ref} className={className}>{children}</Tag>;
+}
+const CatBanner = ({ text, on, dep }) => <FitText className={'cat' + (on ? '' : ' hid')} dep={text + '|' + dep}>✨ CATEGORY: {text}</FitText>;
+
 function Field({ f, v, set }) {
   const c = f.t === 'toggle' ? <input type="checkbox" checked={!!v} onChange={e => set(f.k, e.target.checked)} />
     : f.t === 'range' ? <input type="range" min={f.min} max={f.max} step={f.step || 1} value={v} onChange={e => set(f.k, +e.target.value)} />
@@ -110,8 +124,11 @@ function Field({ f, v, set }) {
 }
 
 export default function App() {
-  const [L, setL] = useState(() => { try { return { ...DEFAULTS, ...JSON.parse(localStorage.getItem('ul-settings') || '{}') }; } catch { return DEFAULTS; } });
-  const setLocal = (k, v) => setL(o => ({ ...o, [k]: v }));
+  const [L, setL] = useState(() => { try { return { ...loadDefaults(), ...JSON.parse(localStorage.getItem('ul-settings') || '{}') }; } catch { return loadDefaults(); } });
+  const [draft, setDraft] = useState(null), [toast, setToast] = useState(''), [hasDef, setHasDef] = useState(false);   // draft = what the settings panel edits until Save & Apply
+  const setLocal = (k, v) => { setL(o => ({ ...o, [k]: v })); setDraft(d => (d ? { ...d, L: { ...d.L, [k]: v } } : d)); };   // toolbar quick actions (theme, sound)
+  const setDL = (k, v) => setDraft(d => ({ ...d, L: { ...d.L, [k]: v } }));
+  const setDC = (k, v) => setDraft(d => ({ ...d, cfg: { ...d.cfg, [k]: v } }));
   useEffect(() => { try { localStorage.setItem('ul-settings', JSON.stringify(L)); } catch { /* ignore */ } }, [L]);
 
   const [s, setS] = useState(null), [cfg, setCfg] = useState(null), [cats, setCats] = useState([]), [pinReq, setPinReq] = useState(false);
@@ -122,7 +139,7 @@ export default function App() {
 
   useEffect(() => {
     socket.on('state', st => { setS(st); deadline.current = Date.now() + st.remaining * 1000; setLeft(st.remaining); });
-    socket.on('settings', x => { setCfg(x.cfg); setCats(x.cats); setPinReq(x.pinRequired); });
+    socket.on('settings', x => { setCfg(x.cfg); setCats(x.cats); setPinReq(x.pinRequired); setHasDef(!!x.hasDefaults); });
     socket.on('feed', items => setFeed(f => [...f, ...items].slice(-30)));
     const iv = setInterval(() => { if (!paused.current) setLeft(Math.max(0, Math.ceil((deadline.current - Date.now()) / 1000))); }, 250);
     return () => { clearInterval(iv); socket.off('state'); socket.off('settings'); socket.off('feed'); };
@@ -144,10 +161,36 @@ export default function App() {
   useEffect(() => { document.body.style.background = theme.v['--bg1']; }, [theme]);
 
 
+  const openPanel = tab => {
+    setDraft(d => d || { L: { ...L }, cfg: cfg ? { ...cfg, disabled: [...cfg.disabled], picked: [...cfg.picked] } : null });
+    setPanel(tab);
+  };
+  const closePanel = () => { setPanel(null); setDraft(null); };   // closing without saving discards the draft
   const admin = (a, extra = {}) => socket.emit('admin', { a, pin, ...extra }, r => {
-    if (r && !r.ok) { setMsg(r.error); setPanel('admin'); } else setMsg('');
+    if (r && !r.ok) { setMsg(r.error); openPanel('admin'); } else setMsg('');
   });
-  const sset = (k, v) => { setCfg(c => ({ ...c, [k]: v })); admin('set', { patch: { [k]: v } }); };
+  const flash = t => { setToast(t); setTimeout(() => setToast(''), 2600); };
+  // SAVE & APPLY: look settings apply on this screen, game + category settings go to the server and a new round starts right away.
+  // asDefault also remembers everything as the defaults used by "Reset to my defaults" (look on this device, game on the server).
+  const commit = asDefault => {
+    if (!draft) return;
+    setL(draft.L);
+    if (asDefault) try { localStorage.setItem('ul-defaults', JSON.stringify(draft.L)); } catch { /* ignore */ }
+    if (!draft.cfg) { flash('✅ Look settings saved'); closePanel(); return; }
+    socket.emit('admin', { a: 'apply', pin, patch: draft.cfg, asDefault }, r => {
+      if (r && !r.ok) { setMsg(r.error); setPanel('admin'); return; }
+      setMsg(''); flash(asDefault ? '⭐ Saved & applied as default' : '✅ Saved & applied'); closePanel();
+    });
+  };
+  const resetToDefaults = factory => {
+    if (!window.confirm(factory ? 'Reset EVERYTHING to factory settings?' : 'Reset everything to your saved defaults?')) return;
+    if (factory) { try { localStorage.removeItem('ul-defaults'); } catch { /* ignore */ } }
+    setL(factory ? DEFAULTS : loadDefaults());
+    socket.emit('admin', { a: 'resetDefaults', pin, factory }, r => {
+      if (r && !r.ok) { setMsg(r.error); setPanel('admin'); return; }
+      flash(factory ? '🏭 Factory settings restored' : '↩️ Defaults restored'); closePanel();
+    });
+  };
   const fullscreen = () => { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.(); };
 
   if (!s) return <div className="stage" style={theme.v}><p className="wait">Connecting…</p></div>;
@@ -174,23 +217,24 @@ export default function App() {
         <button onClick={() => setMenu(m => !m)} title="Theme">{theme.icon}</button>
         <button className={s.paused ? 'hot' : ''} onClick={() => admin('pause')} title={s.paused ? 'Resume' : 'Pause'}>{s.paused ? '▶️' : '⏸️'}</button>
         <button onClick={() => admin('skip')} title="Skip / next round">⏭️</button>
+        <button className={cfg?.mode === 'specific' ? 'hot' : ''} onClick={() => (panel === 'cats' ? closePanel() : openPanel('cats'))} title="Categories">🗂️</button>
         <button onClick={() => admin('hint')} title="Give a hint now">💡</button>
         <button onClick={() => admin('time')} title="Add 15 seconds">⏰</button>
         <button className={L.sound ? 'hot' : ''} onClick={() => setLocal('sound', !L.sound)} title="Sound on/off">{L.sound ? '🔔' : '🔕'}</button>
         <button onClick={fullscreen} title="Full screen">⛶</button>
-        <button className={panel ? 'hot' : ''} onClick={() => setPanel(p => (p ? null : 'look'))} title="Settings">⚙️</button>
+        <button className={panel ? 'hot' : ''} onClick={() => (panel ? closePanel() : openPanel('look'))} title="Settings">⚙️</button>
       </nav>
 
       {/* ZONE 1 - header + category */}
       <header className="z z1">
         <h1 className={hid(L.showTitle)}>{L.title}</h1>
-        <div className={'cat' + hid(L.showCategory)} style={s.category.length > 20 ? { fontSize: 'calc(4.2cqw*var(--fs))' } : undefined}>✨ CATEGORY: {s.category}</div>
+        <CatBanner text={s.category} on={L.showCategory} dep={L.fontScale + L.font} />
       </header>
 
       {/* ZONE 2 - puzzle board */}
       <section className="z z2">
         <Board text={reveal ? s.answer : s.scrambled} solved={reveal} scale={L.tileScale} />
-        <div className={'hint' + hid(L.showHint && !reveal && !!s.hint)}>{s.hint ? [...s.hint].map(c => (c === ' ' ? '\u00a0' : c === '_' ? '•' : c)).join(' ') : '\u00a0'}</div>
+        <FitText className={'hint' + hid(L.showHint && !reveal && !!s.hint)} dep={s.hint}>{s.hint ? [...s.hint].map(c => (c === ' ' ? '\u00a0' : c === '_' ? '•' : c)).join(' ') : '\u00a0'}</FitText>
         <div className={'strip' + hid(L.showTimer)}>
           {!reveal && <i className="bar-fill" style={{ width: (left / s.total) * 100 + '%' }} />}
           <span className={reveal ? 'winner' : ''}>
@@ -205,7 +249,7 @@ export default function App() {
           {L.showPopup && popup && (
             <div className="pop" key={s.round}>
               <Avatar pic={popup.pic} name={popup.user} size="11cqw" />
-              <div className="txt"><b>@{popup.user}</b><span className="wd">{popup.word}</span></div>
+              <div className="txt"><b>@{popup.user}</b><FitText as="span" className="wd" dep={popup.word}>{popup.word}</FitText></div>
               <div className="pt">+{popup.pts}</div>
             </div>
           )}
@@ -215,7 +259,7 @@ export default function App() {
             <div className={'lbrow' + (p ? '' : ' empty')} key={i}>
               <span className="rk">{i < 3 ? MEDALS[i] : i + 1}</span>
               {p ? <Avatar pic={p.pic} name={p.user} size="7cqw" /> : <span className="av ph" style={{ '--s': '7cqw' }}>?</span>}
-              <div className="who"><b>{p ? '@' + p.user : 'Waiting for winners…'}</b><em>{p ? p.words.slice(-3).join(' · ') : ''}</em></div>
+              <div className="who"><b>{p ? '@' + p.user : 'Waiting for winners…'}</b><FitText as="em" dep={p ? p.words.join() : ''}>{p ? p.words.slice(-3).join(' · ') : ''}</FitText></div>
               <span className="pts">{p ? p.score : ''}</span>
             </div>
           ))}
@@ -239,39 +283,64 @@ export default function App() {
         )}
       </footer>
 
-      {/* SETTINGS PANEL */}
-      {panel && (
-        <div className="panel">
-          <div className="tabs">
-            {[['look', '🎨 Look'], ['layout', '📐 Layout'], ['game', '🎮 Game'], ['cats', '🗂 Categories'], ['admin', '🛠 Admin']].map(([k, n]) => (
-              <button key={k} className={panel === k ? 'on' : ''} onClick={() => setPanel(k)}>{n}</button>))}
-            <button onClick={() => setPanel(null)}>✕</button>
-          </div>
-          {(panel === 'look' || panel === 'layout') && FIELDS[panel].map(f => <Field key={f.k} f={f} v={L[f.k]} set={setLocal} />)}
-          {panel === 'game' && (cfg ? FIELDS.game.map(f => <Field key={f.k} f={f} v={cfg[f.k]} set={sset} />) : <p>Loading…</p>)}
-          {panel === 'game' && <p className="note">Game settings apply from the next round.</p>}
-          {panel === 'cats' && cfg && (
-            <>
-              <button className="act" onClick={() => sset('disabled', [])}>Enable all ({cats.length})</button>
-              {cats.map(c => (
-                <label className="fld toggle" key={c}><span>{c}</span>
-                  <input type="checkbox" checked={!cfg.disabled.includes(c)} onChange={e => sset('disabled', e.target.checked ? cfg.disabled.filter(x => x !== c) : [...cfg.disabled, c])} />
-                </label>))}
-            </>
-          )}
-          {panel === 'admin' && (
-            <>
-              {pinReq && <label className="fld text"><span>Admin PIN</span>
-                <input type="password" value={pin} onChange={e => { setPin(e.target.value); localStorage.setItem('ul-pin', e.target.value); }} /></label>}
+      {toast && <div className="toast">{toast}</div>}
+
+      {/* SETTINGS PANEL - edits a draft; nothing changes until Save & Apply */}
+      {panel && draft && (() => {
+        const dc = draft.cfg, dirty = JSON.stringify(draft) !== JSON.stringify({ L, cfg });
+        return (
+          <div className="panel">
+            <div className="tabs">
+              {[['look', '🎨 Look'], ['layout', '📐 Layout'], ['game', '🎮 Game'], ['cats', '🗂 Categories'], ['admin', '🛠 Admin']].map(([k, n]) => (
+                <button key={k} className={panel === k ? 'on' : ''} onClick={() => setPanel(k)}>{n}</button>))}
+              <button onClick={closePanel} title="Close without saving">✕</button>
+            </div>
+            {(panel === 'look' || panel === 'layout') && FIELDS[panel].map(f => <Field key={f.k} f={f} v={draft.L[f.k]} set={setDL} />)}
+            {panel === 'game' && (dc ? FIELDS.game.map(f => <Field key={f.k} f={f} v={dc[f.k]} set={setDC} />) : <p>Loading…</p>)}
+            {panel === 'game' && <p className="note">Press Save &amp; Apply below: the new game settings start with a fresh round.</p>}
+            {panel === 'cats' && dc && (() => {
+              const spec = dc.mode === 'specific', list = spec ? dc.picked : cats.filter(c => !dc.disabled.includes(c));
+              const toggle = (c, on) => spec ? setDC('picked', on ? [...dc.picked, c] : dc.picked.filter(x => x !== c))
+                : setDC('disabled', on ? dc.disabled.filter(x => x !== c) : [...dc.disabled, c]);
+              return (
+                <>
+                  <div className="seg">
+                    <button className={!spec ? 'on' : ''} onClick={() => setDC('mode', 'random')}>🎲 Random mix</button>
+                    <button className={spec ? 'on' : ''} onClick={() => setDC('mode', 'specific')}>🎯 Specific</button>
+                  </div>
+                  <p className="note">{spec ? (dc.picked.length ? `Only these ${dc.picked.length} categor${dc.picked.length > 1 ? 'ies' : 'y'} will appear${dc.picked.length === 1 ? ' (locked to one)' : ''}.` : 'Nothing picked yet - tick one or more below (falls back to random until then).')
+                    : `Random from ${list.length} of ${cats.length} categories. Untick to leave one out.`}</p>
+                  <div className="seg">
+                    <button onClick={() => (spec ? setDC('picked', [...cats]) : setDC('disabled', []))}>✅ All</button>
+                    <button onClick={() => (spec ? setDC('picked', []) : setDC('disabled', [...cats]))}>⬜ None</button>
+                  </div>
+                  {cats.map(c => (
+                    <label className="fld toggle" key={c}><span>{c}</span>
+                      <input type="checkbox" checked={list.includes(c)} onChange={e => toggle(c, e.target.checked)} /></label>))}
+                </>
+              );
+            })()}
+            {panel === 'admin' && (
+              <>
+                {pinReq && <label className="fld text"><span>Admin PIN</span>
+                  <input type="password" value={pin} onChange={e => { setPin(e.target.value); localStorage.setItem('ul-pin', e.target.value); }} /></label>}
+                <button className="act" onClick={() => admin('pause')}>{s.paused ? '▶️ Resume game' : '⏸️ Pause game'}</button>
+                <button className="act" onClick={() => admin('skip')}>⏭️ Skip round</button>
+                <button className="act" onClick={() => window.confirm('Reset the leaderboard?') && admin('reset')}>🧹 Reset leaderboard</button>
+                <button className="act" onClick={() => resetToDefaults(false)}>↩️ Reset all to my saved defaults</button>
+                <button className="act" onClick={() => resetToDefaults(true)}>🏭 Reset all to factory settings</button>
+                <p className="note">{hasDef ? 'A saved default exists on the server.' : 'No saved default yet - use “Save & Apply as Default”.'}</p>
+              </>
+            )}
+            <div className="savebar">
               {msg && <p className="err">{msg}</p>}
-              <button className="act" onClick={() => admin('pause')}>{s.paused ? '▶️ Resume game' : '⏸️ Pause game'}</button>
-              <button className="act" onClick={() => admin('skip')}>⏭️ Skip round</button>
-              <button className="act" onClick={() => window.confirm('Reset the leaderboard?') && admin('reset')}>🧹 Reset leaderboard</button>
-              <button className="act" onClick={() => window.confirm('Reset all display settings?') && setL(DEFAULTS)}>♻️ Reset display settings</button>
-            </>
-          )}
-        </div>
-      )}
+              {dirty && <p className="note dirty">● Unsaved changes</p>}
+              <button className="act go" onClick={() => commit(false)}>💾 Save &amp; Apply</button>
+              <button className="act go alt" onClick={() => commit(true)}>⭐ Save &amp; Apply as Default</button>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

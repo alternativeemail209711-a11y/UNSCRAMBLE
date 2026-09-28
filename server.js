@@ -11,29 +11,41 @@ const R = (...p) => path.join(__dirname, ...p);
 // ---------- puzzle DB ----------
 const dbFile = fs.existsSync(R('data/puzzles.full.json')) ? R('data/puzzles.full.json') : R('data/puzzles.sample.json');
 const DB = JSON.parse(fs.readFileSync(dbFile, 'utf8'));
+// data/puzzles.extra.json is ALWAYS merged on top (also when puzzles.full.json exists), so hand-written categories never get lost
+const extraFile = R('data/puzzles.extra.json');
+if (fs.existsSync(extraFile)) {
+  const X = JSON.parse(fs.readFileSync(extraFile, 'utf8'));
+  for (const [c, l] of Object.entries(X)) DB[c] = [...new Set([...(DB[c] || []), ...l.map(a => String(a).toUpperCase().replace(/\s+/g, ' ').trim())])];
+}
 // 'English words' style catch-all categories are intentionally excluded (too wide / vague)
 const BANNED = /english|common words|random words|dictionary/i;
 const CATS = Object.keys(DB).filter(c => DB[c].length && !BANNED.test(c));
 console.log(`Loaded ${CATS.length} categories from ${path.basename(dbFile)}`);
 
 // ---------- host-adjustable game settings ----------
-const DEF = { roundSeconds: +process.env.ROUND_SECONDS || 90, revealSeconds: 10, minLetters: 5, maxLetters: 25,
+const DEF = { roundSeconds: +process.env.ROUND_SECONDS || 90, revealSeconds: 10, minLetters: 5, maxLetters: 20,
   allowMulti: true, spaceless: true, hints: true, hintStart: 40, hintEvery: 10, maxHints: 3,
-  basePoints: 10, speedBonus: 10, hintPenalty: 2, disabled: [] };
+  basePoints: 10, speedBonus: 10, hintPenalty: 2, disabled: [], mode: 'random', picked: [] };
 const RANGE = { roundSeconds: [20, 300], revealSeconds: [3, 30], minLetters: [3, 25], maxLetters: [3, 25], hintStart: [10, 90],
   hintEvery: [3, 60], maxHints: [0, 10], basePoints: [1, 100], speedBonus: [0, 100], hintPenalty: [0, 20] };
-const SFILE = R('data/settings.json');
-let cfg = { ...DEF };
-try { cfg = { ...DEF, ...JSON.parse(fs.readFileSync(SFILE, 'utf8')) }; } catch {}
+// DATA_DIR (optional env): point it at a persistent disk so saved settings survive redeploys
+const DATA_DIR = process.env.DATA_DIR || R('data');
+const SFILE = path.join(DATA_DIR, 'settings.json');   // current settings (Save & Apply)
+const DFILE = path.join(DATA_DIR, 'defaults.json');   // host's own defaults (Save & Apply as Default)
+const readJSON = f => { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch { return {}; } };
+const persist = (f, o) => { try { fs.mkdirSync(DATA_DIR, { recursive: true }); fs.writeFileSync(f, JSON.stringify(o)); } catch (e) { console.warn('Could not save ' + f + ': ' + e.message); } };
+let userDef = readJSON(DFILE);
+let cfg = { ...DEF, ...userDef, ...readJSON(SFILE) };
 let saveT;
 function applyPatch(p) {
   for (const [k, v] of Object.entries(p || {})) {
     if (RANGE[k] && typeof v === 'number') cfg[k] = Math.min(RANGE[k][1], Math.max(RANGE[k][0], Math.round(v)));
     else if (['allowMulti', 'spaceless', 'hints'].includes(k)) cfg[k] = !!v;
-    else if (k === 'disabled' && Array.isArray(v)) cfg[k] = v.filter(c => CATS.includes(c));
+    else if ((k === 'disabled' || k === 'picked') && Array.isArray(v)) cfg[k] = v.filter(c => CATS.includes(c));
+    else if (k === 'mode' && ['random', 'specific'].includes(v)) cfg.mode = v;
   }
   if (cfg.minLetters > cfg.maxLetters) cfg.maxLetters = cfg.minLetters;
-  clearTimeout(saveT); saveT = setTimeout(() => { try { fs.writeFileSync(SFILE, JSON.stringify(cfg)); } catch {} }, 1000);
+  clearTimeout(saveT); saveT = setTimeout(() => persist(SFILE, cfg), 1000);
 }
 
 // ---------- helpers ----------
@@ -59,8 +71,10 @@ function scramble(answer) {
 const used = {}; let lastCat = null;
 function pick() {
   const okAns = a => { const n = a.replace(/ /g, '').length; return n >= cfg.minLetters && n <= cfg.maxLetters && (cfg.allowMulti || !a.includes(' ')); };
-  let pools = CATS.filter(c => !cfg.disabled.includes(c)).map(c => [c, DB[c].filter(okAns)]).filter(([, l]) => l.length);
-  if (!pools.length) pools = CATS.map(c => [c, DB[c]]);              // filters too strict -> ignore them
+  const chosen = cfg.mode === 'specific' ? CATS.filter(c => cfg.picked.includes(c)) : [];
+  const base = chosen.length ? chosen : CATS.filter(c => !cfg.disabled.includes(c));   // specific = only picked; random = every enabled category
+  let pools = base.map(c => [c, DB[c].filter(okAns)]).filter(([, l]) => l.length);
+  if (!pools.length) pools = (base.length ? base : CATS).map(c => [c, DB[c]]);       // letter filters too strict -> ignore them
   let [cat, list] = pools[Math.floor(Math.random() * pools.length)];
   if (pools.length > 1 && cat === lastCat) [cat, list] = pools.filter(([c]) => c !== lastCat)[Math.floor(Math.random() * (pools.length - 1))];
   lastCat = cat;
@@ -80,7 +94,7 @@ let state = { phase: 'playing', round: 0, category: '', scrambled: '', answer: n
 
 const top = () => [...users.values()].sort((a, b) => b.score - a.score).slice(0, 10);
 const snap = () => ({ ...state, paused, remaining: Math.max(0, Math.ceil((phaseEnd - (paused ? pausedAt : Date.now())) / 1000)), leaderboard: top() });
-const pub = () => ({ cfg, cats: CATS, pinRequired: !!ADMIN_PIN });
+const pub = () => ({ cfg, cats: CATS, pinRequired: !!ADMIN_PIN, hasDefaults: Object.keys(userDef).length > 0 });
 
 const app = express(), server = http.createServer(app), io = new Server(server);
 const broadcast = () => io.emit('state', snap());
@@ -88,7 +102,7 @@ const mask = () => [...current.answer].map((c, i) => c === ' ' ? ' ' : revealed.
 
 function startRound() {
   current = pick(); round++; revealed = new Set();
-  phaseEnd = Date.now() + cfg.roundSeconds * 1000;
+  phaseEnd = Date.now() + cfg.roundSeconds * 1000; if (paused) pausedAt = Date.now();
   state = { phase: 'playing', round, category: current.category, scrambled: scramble(current.answer), answer: null, winner: null, winnerInfo: null, hint: '', total: cfg.roundSeconds };
   broadcast();
 }
@@ -104,7 +118,7 @@ function endRound(w) {
     users.set(w.user, u);
     info = { user: u.user, pic: u.pic, pts, word: current.answer };
   }
-  phaseEnd = Date.now() + cfg.revealSeconds * 1000;
+  phaseEnd = Date.now() + cfg.revealSeconds * 1000; if (paused) pausedAt = Date.now();
   state = { ...state, phase: 'reveal', answer: current.answer, winner: w ? w.user : null, winnerInfo: info };
   broadcast();
 }
@@ -173,10 +187,19 @@ io.on('connection', socket => {
     if (ADMIN_PIN && m?.pin !== ADMIN_PIN) return done({ ok: false, error: 'Wrong or missing PIN' });
     switch (m?.a) {
       case 'set': applyPatch(m.patch); io.emit('settings', pub()); break;
+      case 'apply':   // Save & Apply (+ optionally as default): store, then start a fresh round so everything takes effect now
+        applyPatch(m.patch); clearTimeout(saveT); persist(SFILE, cfg);
+        if (m.asDefault) { userDef = JSON.parse(JSON.stringify(cfg)); persist(DFILE, userDef); }
+        io.emit('settings', pub()); startRound(); break;
+      case 'resetDefaults':   // back to the host's saved defaults (or factory defaults)
+        if (m.factory) { userDef = {}; try { fs.unlinkSync(DFILE); } catch {} }
+        cfg = { ...DEF, ...JSON.parse(JSON.stringify(userDef)) }; persist(SFILE, cfg);
+        io.emit('settings', pub()); startRound(); break;
       case 'pause': if (!paused) { paused = true; pausedAt = Date.now(); } else { phaseEnd += Date.now() - pausedAt; paused = false; } broadcast(); break;
       case 'skip': state.phase === 'playing' ? endRound(null) : startRound(); break;
       case 'hint': if (state.phase === 'playing' && !paused && revealOne()) { state.hint = mask(); broadcast(); } break;
       case 'time': if (state.phase === 'playing') { phaseEnd += 15000; state.total += 15; broadcast(); } break;
+      case 'next': startRound(); break;
       case 'reset': users.clear(); broadcast(); break;
     }
     done({ ok: true });

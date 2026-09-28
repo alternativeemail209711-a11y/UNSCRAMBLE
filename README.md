@@ -20,6 +20,12 @@ Env vars: `TIKTOK_USERNAME`, `TIKTOK_SIGN_API_KEY`, optional `ADMIN_PIN`, `ROUND
 - Guessing from the screen is refused by the server in Live mode, so nobody can cheat through the page.
 - Safe workflow: deploy -> stay in Test -> check -> switch to Live just before you start streaming.
 
+## Type your TikTok details on screen (new)
+⚙️ -> **🔴 Live** tab: type your **TikTok username** (no @) and paste your **Euler key**, then press **🔴 Save & Connect to TikTok**. The key is never shown again (only its last 4 characters) and is never sent back to the screen. Render's Environment variables (`TIKTOK_USERNAME`, `TIKTOK_SIGN_API_KEY`) still work as a backup; what you type on screen wins. Saved in `data/tiktok.json` (use `DATA_DIR` + a persistent disk to keep it after redeploys). Set `ADMIN_PIN` so nobody else can change it.
+
+## Test bot (new, Test mode only)
+The 🤖 button (bottom row in Test mode) starts/stops fake viewers who guess by themselves: mostly wrong guesses and near-misses, and sometimes a correct answer at a random moment. Tune it in ⚙️ -> Game (bottom): *Bot guesses every* (seconds), *Chance the bot solves a round* (%). It only runs in Test mode.
+
 ## Show / hide the answer
 👁️/🙈 toolbar button (or ⚙️ Game -> "Show the answer at the end of each round"). When hidden, the answer never leaves the server: not on the board, not in the winner window, not in the leaderboard's recent words. The scrambled letters stay on screen, and the strip still says who won / "Time's up!". The toolbar switch takes effect from the end of the current round.
 

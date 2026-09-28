@@ -111,3 +111,5 @@ h1{flex:none;max-width:100%;font-size:calc(7.4cqw*var(--fs));line-height:1.15;fo
 .savebar .act.alt{background:var(--a2);color:var(--bt)}
 .savebar .note{margin:0 0 4px}.savebar .err{margin:0 0 4px}.dirty{color:var(--gold);font-weight:800;opacity:1}
 .toast{position:absolute;z-index:40;left:50%;top:15cqw;transform:translateX(-50%);padding:2cqw 5cqw;border-radius:99px;background:var(--a1);color:var(--bt);font-size:4cqw;font-weight:800;white-space:nowrap;box-shadow:0 1cqw 3cqw #0005;animation:in-up .25s both}
+
+.play button.hot{background:linear-gradient(var(--a1),var(--a2));color:var(--bt);box-shadow:0 0 0 .8cqw var(--a1)}

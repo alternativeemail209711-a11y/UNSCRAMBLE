@@ -25,9 +25,9 @@ console.log(`Loaded ${CATS.length} categories from ${path.basename(dbFile)}`);
 // ---------- host-adjustable game settings ----------
 const DEF = { roundSeconds: +process.env.ROUND_SECONDS || 90, revealSeconds: 10, showAnswer: true, minLetters: 5, maxLetters: 20,
   allowMulti: true, spaceless: true, hints: true, hintStart: 40, hintEvery: 10, maxHints: 3,
-  basePoints: 10, speedBonus: 10, hintPenalty: 2, disabled: [], mode: 'random', picked: [] };
+  basePoints: 10, speedBonus: 10, hintPenalty: 2, botOn: false, botEvery: 4, botSkill: 80, disabled: [], mode: 'random', picked: [] };
 const RANGE = { roundSeconds: [20, 300], revealSeconds: [3, 30], minLetters: [3, 25], maxLetters: [3, 25], hintStart: [10, 90],
-  hintEvery: [3, 60], maxHints: [0, 10], basePoints: [1, 100], speedBonus: [0, 100], hintPenalty: [0, 20] };
+  hintEvery: [3, 60], maxHints: [0, 10], basePoints: [1, 100], speedBonus: [0, 100], hintPenalty: [0, 20], botEvery: [1, 30], botSkill: [0, 100] };
 // DATA_DIR (optional env): point it at a persistent disk so saved settings survive redeploys
 const DATA_DIR = process.env.DATA_DIR || R('data');
 const SFILE = path.join(DATA_DIR, 'settings.json');   // current settings (Save & Apply)
@@ -40,13 +40,22 @@ let saveT;
 function applyPatch(p) {
   for (const [k, v] of Object.entries(p || {})) {
     if (RANGE[k] && typeof v === 'number') cfg[k] = Math.min(RANGE[k][1], Math.max(RANGE[k][0], Math.round(v)));
-    else if (['allowMulti', 'spaceless', 'hints', 'showAnswer'].includes(k)) cfg[k] = !!v;
+    else if (['allowMulti', 'spaceless', 'hints', 'showAnswer', 'botOn'].includes(k)) cfg[k] = !!v;
     else if ((k === 'disabled' || k === 'picked') && Array.isArray(v)) cfg[k] = v.filter(c => CATS.includes(c));
     else if (k === 'mode' && ['random', 'specific'].includes(v)) cfg.mode = v;
   }
   if (cfg.minLetters > cfg.maxLetters) cfg.maxLetters = cfg.minLetters;
   clearTimeout(saveT); saveT = setTimeout(() => persist(SFILE, cfg), 1000);
 }
+
+// ---------- TikTok login details (typed on screen: settings -> Live tab; env vars are the fallback) ----------
+const TFILE = path.join(DATA_DIR, 'tiktok.json');
+let ttSaved = readJSON(TFILE);
+const ttCreds = () => ({
+  name: String(ttSaved.username || process.env.TIKTOK_USERNAME || '').replace(/^@/, '').trim(),
+  key: String(ttSaved.apiKey || process.env.TIKTOK_SIGN_API_KEY || '').trim()
+});
+const keyHint = k => (k ? '••••' + k.slice(-4) : '');
 
 // ---------- play mode: test | live | offline ----------
 //  test    -> TikTok chat OFF. Guess box + ✅ solve / 💬 fake-chat buttons, answer peek. For trying games before going live / after upgrades.
@@ -60,7 +69,7 @@ let playMode = (() => {
   if (TEST_MODE) return 'test';                       // legacy TEST_MODE=1 still works
   const saved = readJSON(MFILE).mode;
   if (MODES.includes(saved)) return saved;
-  return process.env.TIKTOK_USERNAME ? 'live' : 'test';
+  return ttCreds().name ? 'live' : 'test';
 })();
 console.log('Play mode: ' + playMode);
 
@@ -105,20 +114,21 @@ function pick() {
 // ---------- game state ----------
 const users = new Map();     // user -> {user, pic, score, wins, words[]}
 const pics = new Map();      // user -> latest profile picture url
+let botPlan = { solveAt: null, nextChat: 0 };
 let round = 0, current = null, phaseEnd = 0, paused = false, pausedAt = 0, revealed = new Set();
 let state = { phase: 'playing', round: 0, category: '', scrambled: '', answer: null, winner: null, winnerInfo: null, hint: '', total: cfg.roundSeconds };
 
 const top = () => [...users.values()].sort((a, b) => b.score - a.score).slice(0, 10);
 const snap = () => ({ ...state, paused, peek: playMode === 'test' && current ? current.answer : '', remaining: Math.max(0, Math.ceil((phaseEnd - (paused ? pausedAt : Date.now())) / 1000)), leaderboard: top() });
 const pub = () => ({ cfg, cats: CATS, pinRequired: !!ADMIN_PIN, hasDefaults: Object.keys(userDef).length > 0,
-  playMode, tt: { status: ttStatus, user: (process.env.TIKTOK_USERNAME || '').replace(/^@/, '') } });
+  playMode, tt: { status: ttStatus, user: ttCreds().name, hasKey: !!ttCreds().key, keyHint: keyHint(ttCreds().key) } });
 
 const app = express(), server = http.createServer(app), io = new Server(server);
 const broadcast = () => io.emit('state', snap());
 const mask = () => [...current.answer].map((c, i) => c === ' ' ? ' ' : revealed.has(i) ? c : '_').join('');
 
 function startRound() {
-  current = pick(); round++; revealed = new Set();
+  current = pick(); round++; revealed = new Set(); planBot();
   phaseEnd = Date.now() + cfg.roundSeconds * 1000; if (paused) pausedAt = Date.now();
   state = { phase: 'playing', round, category: current.category, scrambled: scramble(current.answer), answer: null, winner: null, winnerInfo: null, hint: '', total: cfg.roundSeconds };
   broadcast();
@@ -157,6 +167,36 @@ setInterval(() => {                                   // one ticker: round end, 
   }
 }, 250);
 
+// ---------- test bot (Test mode only): fake viewers that guess by themselves ----------
+const BOT_NAMES = ['luna_x', 'mike99', 'sarah.j', 'tiktokfan', 'bella.b', 'jayden_', 'coolcat', 'sam_the_man', 'zoe.zoe', 'dj_max', 'nina_k', 'alex.plays'];
+const BOT_WORDS = ['apple', 'hello', 'cat', 'pizza', 'wow', 'maybe', 'nope', 'lol', 'is it food?', 'hmm', 'too hard', 'dog', 'blue', 'idk', 'love', 'omg'];
+const rnd = a => a[Math.floor(Math.random() * a.length)];
+function planBot() {                                  // decided once per round: will a bot solve it, and when?
+  const solves = Math.random() * 100 < cfg.botSkill;
+  botPlan = { solveAt: solves ? cfg.roundSeconds * (0.1 + Math.random() * 0.8) : null, nextChat: Date.now() + 1500 + Math.random() * 2000 };
+}
+function botWrongGuess() {                            // never equals the real answer
+  const ans = current.answer, letters = [...ans.replace(/ /g, '')];
+  for (let t = 0; t < 8; t++) {
+    let g;
+    if (Math.random() < 0.55 && letters.length > 2) {   // near-miss: the real letters, slightly wrong order
+      const a = [...letters], i = Math.floor(Math.random() * a.length), j = Math.floor(Math.random() * a.length);
+      [a[i], a[j]] = [a[j], a[i]]; g = a.join('').toLowerCase();
+    } else g = rnd(BOT_WORDS);
+    if (norm(g) !== norm(ans)) return g;
+  }
+  return 'hmm';
+}
+setInterval(() => {
+  if (playMode !== 'test' || !cfg.botOn || paused || state.phase !== 'playing' || !current) return;
+  const now = Date.now(), elapsed = (now - (phaseEnd - state.total * 1000)) / 1000;
+  if (botPlan.solveAt !== null && elapsed >= botPlan.solveAt) { botPlan.solveAt = null; onGuess(rnd(BOT_NAMES), current.answer, ''); return; }
+  if (now >= botPlan.nextChat) {
+    onGuess(rnd(BOT_NAMES), botWrongGuess(), '');
+    botPlan.nextChat = now + cfg.botEvery * 1000 * (0.5 + Math.random());
+  }
+}, 400);
+
 // ---------- chat ----------
 let feedBuf = [], feedId = 0;
 setInterval(() => { if (feedBuf.length) { io.emit('feed', feedBuf); feedBuf = []; } }, 300);
@@ -186,10 +226,10 @@ function disconnectTikTok() {
 }
 function connectTikTok() {
   if (playMode !== 'live') return;                    // only Live mode listens to TikTok chat
-  const name = (process.env.TIKTOK_USERNAME || '').replace(/^@/, '');
-  if (!name) { setTT('nouser'); return console.log('TIKTOK_USERNAME not set -> cannot read chat in Live mode'); }
+  const { name, key } = ttCreds();
+  if (!name) { setTT('nouser'); return console.log('TikTok username not set -> cannot read chat in Live mode'); }
   clearTimeout(ttTimer); ttTimer = null;
-  const conn = new TikTokLiveConnection(name, { signApiKey: process.env.TIKTOK_SIGN_API_KEY });
+  const conn = new TikTokLiveConnection(name, { signApiKey: key || undefined });
   ttConn = conn; setTT('connecting');
   let retried = false;
   const alive = () => conn === ttConn && playMode === 'live';   // false once the host switched mode
@@ -251,6 +291,15 @@ io.on('connection', socket => {
         cfg = { ...DEF, ...JSON.parse(JSON.stringify(userDef)) }; persist(SFILE, cfg);
         io.emit('settings', pub()); startRound(); break;
       case 'mode': setMode(m.mode); break;
+      case 'tiktok': {   // username + Euler key typed on screen (settings -> Live tab)
+        const next = { ...ttSaved };
+        if (typeof m.username === 'string') next.username = m.username.replace(/^@/, '').replace(/[^A-Za-z0-9._]/g, '').slice(0, 40);
+        if (m.clearKey) next.apiKey = '';
+        else if (typeof m.apiKey === 'string' && m.apiKey.trim()) next.apiKey = m.apiKey.trim().slice(0, 300);   // empty box = keep the saved key
+        ttSaved = next; persist(TFILE, ttSaved);
+        if (playMode === 'live') { disconnectTikTok(); connectTikTok(); }
+        io.emit('settings', pub()); break;
+      }
       case 'testSolve': if (playMode === 'test' && state.phase === 'playing' && current) onGuess(FAKE_USERS[Math.floor(Math.random() * FAKE_USERS.length)], current.answer, ''); break;
       case 'testChat': if (playMode === 'test') for (let i = 0; i < 5; i++) onGuess(FAKE_USERS[Math.floor(Math.random() * FAKE_USERS.length)], FAKE_WORDS[Math.floor(Math.random() * FAKE_WORDS.length)], ''); break;
       case 'pause': if (!paused) { paused = true; pausedAt = Date.now(); } else { phaseEnd += Date.now() - pausedAt; paused = false; } broadcast(); break;

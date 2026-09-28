@@ -3,6 +3,9 @@ const T = (name, icon, bg1, bg2, panel, text, link, a1, a2, bt, t1, t2, tt, te, 
   ({ name, icon, v: { '--bg1': bg1, '--bg2': bg2, '--panel': panel, '--text': text, '--link': link, '--a1': a1, '--a2': a2, '--bt': bt, '--t1': t1, '--t2': t2, '--tt': tt, '--te': te, '--gold': gold } });
 const L = 'rgba(20,30,70,.09)', D = 'rgba(255,255,255,.11)';
 export const THEMES = {
+  cotton:   T('Cotton Candy', '🍬', '#ffe3f1', '#d9ccff', 'rgba(255,255,255,.55)', '#5a1a55', '#c2187a', '#ff6fb5', '#a78bfa', '#fff', '#ffffff', '#ffd6ec', '#7a1f66', '#ff6fb5', '#f59e0b'),
+  peach:    T('Peach Bunny', '🐰', '#fff1e6', '#ffc9b5', 'rgba(255,255,255,.6)', '#6b2a1a', '#c2410c', '#ff8f70', '#ffb347', '#fff', '#ffffff', '#ffe0cf', '#7a2e18', '#ff8f70', '#e08400'),
+  mint:     T('Minty Fresh', '🍃', '#e2fff3', '#c3f0ff', 'rgba(255,255,255,.6)', '#124a44', '#0f766e', '#3ed3a8', '#5cc8ff', '#fff', '#ffffff', '#d3fbe9', '#0f5b52', '#3ed3a8', '#d98200'),
   dark:     T('Dark', '🌙', '#0b0f1a', '#1b2340', D, '#f4f6ff', '#7cc4ff', '#6d4aff', '#c026d3', '#fff', '#fff', '#e2e8ff', '#111633', '#6d4aff', '#ffd54a'),
   light:    T('Light', '☀️', '#f7f8fc', '#e4e8f5', L, '#141a33', '#0b57c2', '#3b5bdb', '#7048e8', '#fff', '#fff', '#f1f3ff', '#141a33', '#3b5bdb', '#8a5300'),
   cream:    T('Cream', '🍦', '#fff8e7', '#f6e7c1', 'rgba(90,60,20,.10)', '#3b2a14', '#8a4b08', '#b45309', '#c2410c', '#fff', '#fffdf6', '#fbeccb', '#3b2a14', '#b45309', '#7a4a00'),

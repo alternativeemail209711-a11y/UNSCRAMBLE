@@ -86,6 +86,7 @@ const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.f
     } catch (e) { console.warn(`SKIP ${wiki}: ${e.message}`); }
   }
   for (const c of Object.keys(db)) {
+    if (/english|common words|random words|dictionary/i.test(c)) { delete db[c]; continue; }   // too wide / vague
     db[c] = shuffle(db[c]).slice(0, MAX);
     if (db[c].length < TARGET) console.warn(`! ${c} has only ${db[c].length} (< ${TARGET}) - add sources or data/custom/${c}.txt`);
     if (db[c].length < 30) delete db[c];

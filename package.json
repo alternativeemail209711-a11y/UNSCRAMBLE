@@ -1,13 +1,10 @@
 {
   "name": "unscramble-live",
-  "version": "2.0.0",
+  "version": "1.0.0",
   "main": "server.js",
   "scripts": {
-    "postinstall": "node generate_words.js --soft && cd client && npm install && npm run build",
-    "start": "node server.js",
-    "dev": "node server.js",
-    "words": "node generate_words.js",
-    "dev:client": "cd client && npm run dev"
+    "postinstall": "cd client && npm install && npm run build",
+    "start": "node server.js"
   },
   "engines": { "node": "20.x" },
   "dependencies": {

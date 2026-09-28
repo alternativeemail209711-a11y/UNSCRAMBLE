@@ -25,9 +25,9 @@ console.log(`Loaded ${CATS.length} categories from ${path.basename(dbFile)}`);
 // ---------- host-adjustable game settings ----------
 const DEF = { roundSeconds: +process.env.ROUND_SECONDS || 90, revealSeconds: 10, showAnswer: true, minLetters: 5, maxLetters: 20,
   allowMulti: true, spaceless: true, hints: true, hintStart: 40, hintEvery: 10, maxHints: 3,
-  basePoints: 10, speedBonus: 10, hintPenalty: 2, botOn: false, botEvery: 4, botSkill: 80, disabled: [], mode: 'random', picked: [] };
+  botOn: false, botEvery: 4, botSkill: 80, disabled: [], mode: 'random', picked: [] };
 const RANGE = { roundSeconds: [20, 300], revealSeconds: [3, 30], minLetters: [3, 25], maxLetters: [3, 25], hintStart: [10, 90],
-  hintEvery: [3, 60], maxHints: [0, 10], basePoints: [1, 100], speedBonus: [0, 100], hintPenalty: [0, 20], botEvery: [1, 30], botSkill: [0, 100] };
+  hintEvery: [3, 60], maxHints: [0, 10], botEvery: [1, 30], botSkill: [0, 100] };
 // DATA_DIR (optional env): point it at a persistent disk so saved settings survive redeploys
 const DATA_DIR = process.env.DATA_DIR || R('data');
 const SFILE = path.join(DATA_DIR, 'settings.json');   // current settings (Save & Apply)
@@ -137,8 +137,7 @@ function endRound(w) {
   if (state.phase !== 'playing') return;
   let info = null;
   if (w) {
-    const left = Math.max(0, (phaseEnd - Date.now()) / 1000);
-    const pts = Math.max(1, Math.round(cfg.basePoints + cfg.speedBonus * left / state.total - cfg.hintPenalty * revealed.size));
+    const pts = 1;                                    // fixed: 1 point per correct guess, one winner per round
     const u = users.get(w.user) || { user: w.user, pic: '', score: 0, wins: 0, words: [] };
     if (w.pic) u.pic = w.pic;
     u.score += pts; u.wins++; if (cfg.showAnswer) u.words = [...u.words, current.answer].slice(-6);   // hidden answers never leak via the leaderboard

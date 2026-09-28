@@ -49,7 +49,6 @@ h1{flex:none;max-width:100%;font-size:calc(7.4cqw*var(--fs));line-height:1.15;fo
 .av.ph{display:grid;place-items:center;font-size:calc(var(--s)*.5);font-weight:800;background:var(--a1);color:var(--bt)}
 .lb{flex:0 1 auto;min-height:0;display:flex;flex-direction:column;gap:1cqw;overflow:hidden}
 .lbrow{flex:0 0 9cqw;display:flex;align-items:center;gap:2cqw;padding:0 2.5cqw;border-radius:99px;background:var(--panel);border:.4cqw solid #fff8;box-shadow:0 .5cqw 0 #0001}
-.lbrow.empty{opacity:.55}
 .rk{flex:none;width:6cqw;text-align:center;font-size:4.2cqw;font-weight:800}
 .who{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.2}
 .who b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

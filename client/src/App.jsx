@@ -47,7 +47,6 @@ const FIELDS = {
     rg('minLetters', 'Min letters', 3, 25), rg('maxLetters', 'Max letters', 3, 25), tg('allowMulti', 'Allow multi-word puzzles'),
     tg('spaceless', 'Accept answer without spaces'), tg('hints', 'Auto hints (reveal letters)'), rg('hintStart', 'First hint at', 10, 90, 5, '% of round'),
     rg('hintEvery', 'Next hint every', 3, 60, 1, 's'), rg('maxHints', 'Max hints', 0, 10),
-    rg('basePoints', 'Base points', 1, 100), rg('speedBonus', 'Speed bonus (max)', 0, 100), rg('hintPenalty', 'Penalty per hint', 0, 20),
     tg('botOn', '🤖 Test bot guesses by itself (Test mode only)'), rg('botEvery', 'Bot guesses every', 1, 30, 1, 's'), rg('botSkill', 'Chance the bot solves a round', 0, 100, 5, '%')]
 };
 
@@ -238,7 +237,7 @@ export default function App() {
   const nRows = Math.min(L.lbRows, maxRows);
   const style = { ...theme.v, '--fs': L.fontScale / 100, '--ff': FONTS[L.font][1], '--tr': RADIUS[L.tileShape], gridTemplateRows: `auto minmax(0,${z1}fr) minmax(0,${z2}fr) minmax(0,${z3}fr) minmax(0,${z4}fr)` };
   const hid = on => (on ? '' : ' hid');
-  const rows = Array.from({ length: nRows }, (_, i) => s.leaderboard[i] || null);
+  const rows = s.leaderboard.slice(0, nRows);   // only real winners - no empty placeholder rows
 
   return (
     <div className={'stage' + (L.reduceMotion ? ' calm' : '')} style={style}>
@@ -305,11 +304,11 @@ export default function App() {
         </div>
         <div className={'lb' + hid(L.showLb)}>
           {rows.map((p, i) => (
-            <div className={'lbrow' + (p ? '' : ' empty')} key={i}>
+            <div className="lbrow" key={p.user}>
               <span className="rk">{i < 3 ? MEDALS[i] : i + 1}</span>
-              {p ? <Avatar pic={p.pic} name={p.user} size="7cqw" /> : <span className="av ph" style={{ '--s': '7cqw' }}>?</span>}
-              <div className="who"><b>{p ? '@' + p.user : 'Waiting for winners…'}</b><FitText as="em" dep={p ? p.words.join() : ''}>{p ? p.words.slice(-3).join(' · ') : ''}</FitText></div>
-              <span className="pts">{p ? p.score : ''}</span>
+              <Avatar pic={p.pic} name={p.user} size="7cqw" />
+              <div className="who"><b>@{p.user}</b><FitText as="em" dep={p.words.join()}>{p.words.slice(-3).join(' · ')}</FitText></div>
+              <span className="pts">{p.score}</span>
             </div>
           ))}
         </div>

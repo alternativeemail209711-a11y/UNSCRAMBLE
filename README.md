@@ -26,6 +26,9 @@ Env vars: `TIKTOK_USERNAME`, `TIKTOK_SIGN_API_KEY`, optional `ADMIN_PIN`, `ROUND
 ## Test bot (new, Test mode only)
 The 🤖 button (bottom row in Test mode) starts/stops fake viewers who guess by themselves: mostly wrong guesses and near-misses, and sometimes a correct answer at a random moment. Tune it in ⚙️ -> Game (bottom): *Bot guesses every* (seconds), *Chance the bot solves a round* (%). It only runs in Test mode.
 
+## Scoring (fixed)
+One winner per round: the first correct guess ends the round and earns **1 point**. The leaderboard only lists real winners (no empty "waiting" rows).
+
 ## Show / hide the answer
 👁️/🙈 toolbar button (or ⚙️ Game -> "Show the answer at the end of each round"). When hidden, the answer never leaves the server: not on the board, not in the winner window, not in the leaderboard's recent words. The scrambled letters stay on screen, and the strip still says who won / "Time's up!". The toolbar switch takes effect from the end of the current round.
 

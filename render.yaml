@@ -1,0 +1,17 @@
+# Render Blueprint (optional): New + > Blueprint, pick this repo.
+services:
+  - type: web
+    name: unscramble-live
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: 20.18.0
+      - key: EULERSTREAM_API_KEY
+        sync: false
+      - key: ADMIN_PIN
+        sync: false
+      # To keep the all-time leaderboard across redeploys (paid plans): add a Disk mounted at /var/data and set DATA_DIR=/var/data

@@ -44,8 +44,15 @@ function addLog(m) { m = redact(m); logs.push({ t: Date.now(), m }); if (logs.le
 // ---------- puzzle DB ----------
 const dbFile = fs.existsSync(R('data/puzzles.full.json')) ? R('data/puzzles.full.json') : R('data/puzzles.sample.json');
 const DB = JSON.parse(fs.readFileSync(dbFile, 'utf8'));
+// English word bank: data/words.full.txt (if you ran `npm run words`) else data/words.txt, one word per line.
+const WORDS_CAT = 'ENGLISH WORDS';
+const wordFile = fs.existsSync(R('data/words.full.txt')) ? R('data/words.full.txt') : R('data/words.txt');
+const WORDSET = new Set();
+try { for (const w of fs.readFileSync(wordFile, 'utf8').split(/\r?\n/)) { const u = w.trim().toUpperCase(); if (/^[A-Z]{3,25}$/.test(u)) WORDSET.add(u); } } catch {}
+if (WORDSET.size) DB[WORDS_CAT] = [...WORDSET];
 const CATS = Object.keys(DB).filter(c => DB[c].length);
-console.log(`Loaded ${CATS.length} categories from ${path.basename(dbFile)}`);
+const sortKey = w => [...w].sort().join('');
+console.log(`Loaded ${CATS.length} categories from ${path.basename(dbFile)} + ${WORDSET.size} English words (${path.basename(wordFile)})`);
 
 // ---------- host-adjustable game settings ----------
 const DEF = { roundSeconds: +process.env.ROUND_SECONDS || 90, revealSeconds: 10, minLetters: 5, maxLetters: 25,
@@ -205,8 +212,10 @@ function onGuess(user, text, pic) {
   text = String(text || '').slice(0, 60);
   if (!norm(text)) return;
   if (pic) { pics.set(user, pic); if (pics.size > 3000) pics.delete(pics.keys().next().value); }
+  const g = norm(text);
+  const anagram = current.category === WORDS_CAT && WORDSET.has(g) && sortKey(g) === sortKey(current.answer);   // any real word using the same letters wins
   const ok = state.phase === 'playing' && !paused &&
-    (cfg.spaceless ? norm(text) === norm(current.answer) : normStrict(text) === current.answer);
+    (anagram || (cfg.spaceless ? g === norm(current.answer) : normStrict(text) === current.answer));
   feedBuf.push({ id: ++feedId, user, text: ok ? '✅ got it!' : text, ok, pic: pics.get(user) || '' });
   if (feedBuf.length > 40) feedBuf.shift();
   if (ok) endRound({ user, pic: pics.get(user) || '' });
@@ -415,7 +424,7 @@ io.on('connection', socket => {
 
 const dist = R('client/dist');
 app.get('/health', (_, res) => res.send('ok'));
-app.get('/api/status', (_, res) => res.json({ ok: true, mode: live.mode, status: live.status, phase: state.phase, round, players: { session: session.size, allTime: allTime.size } }));
+app.get('/api/status', (_, res) => res.json({ ok: true, mode: live.mode, status: live.status, phase: state.phase, round, players: { session: session.size, allTime: allTime.size }, words: WORDSET.size }));
 app.use(express.static(dist));
 app.use((_, res) => res.sendFile(path.join(dist, 'index.html')));
 

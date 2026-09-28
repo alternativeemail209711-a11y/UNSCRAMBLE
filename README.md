@@ -48,6 +48,11 @@ npm start            # http://localhost:3000
 # client dev with hot reload: npm run dev (server) + npm run dev:client (Vite, proxies sockets)
 ```
 
+## English word bank
+- Bundled: **112,440 verified English words** (`data/words.txt`, common words + inflections, no proper nouns/acronyms) as the toggleable **ENGLISH WORDS** category. In that category **any valid dictionary anagram wins**, not only the exact target word.
+- Honest limit: 450,000+ *strictly valid* single English words is more than any standard open list contains (Collins Scrabble is ~280k, dwyl/english-words ~370k and includes obscure entries), so the bundled file is not padded.
+- Want the biggest list possible? Run `npm run words` on a machine with internet: it merges the bundled words with the public dwyl list into `data/words.full.txt` (auto-loaded, commit it).
+
 ## Big puzzle database
 `node generate_db.js` -> `data/puzzles.full.json` (auto-loaded when present).
 

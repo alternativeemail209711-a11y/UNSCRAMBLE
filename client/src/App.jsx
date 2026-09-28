@@ -4,7 +4,6 @@ import { THEMES } from './themes.js';
 import './styles.css';
 
 const socket = io();
-const TEST = new URLSearchParams(location.search).has('test');
 const MEDALS = ['🥇', '🥈', '🥉'];
 const FONTS = {
   system: ['System', "system-ui,'Segoe UI',Roboto,sans-serif"], rounded: ['Rounded', "ui-rounded,'Nunito','Trebuchet MS',system-ui,sans-serif"],
@@ -16,7 +15,13 @@ const RADIUS = { rounded: '18%', square: '6%', circle: '50%' };
 const DEFAULTS = { theme: 'cotton', font: 'cute', fontScale: 100, tileShape: 'rounded', tileScale: 100, title: 'UNSCRAMBLE LIVE',
   footer: 'Type the correct word(s) in the chat to win!', reduceMotion: false, showTitle: true, showCategory: true, showTimer: true,
   showHint: true, showPopup: true, showLb: true, showFeed: true, showFooter: true, feedLines: 4, lbRows: 3, feedAvatars: true,
-  popupSecs: 8, z1: 20, z2: 28, z4: 12, sound: false, volume: 60 };
+  popupSecs: 8, z1: 20, z2: 28, z4: 12, sound: false, volume: 60, playerName: 'Me' };
+const MODES = {
+  test: ['🧪', 'TEST', 'Test mode', 'Try games & upgrades. TikTok chat is OFF. Use the guess box, ✅ (solve) and 💬 (fake chat).'],
+  live: ['🔴', 'LIVE', 'Live mode', 'Go live on TikTok. Reads the TikTok chat. Guess box is hidden.'],
+  offline: ['🎮', 'SOLO', 'Offline mode', 'Play by yourself. TikTok chat is OFF. Type your own guesses in the box.']
+};
+const TT_TEXT = { off: '', nouser: '⚠️ TIKTOK_USERNAME is not set on the server', connecting: '⏳ Connecting to TikTok…', connected: '✅ Connected to TikTok chat', retrying: '⏳ Not live yet - retrying every 15s' };
 const loadDefaults = () => { try { return { ...DEFAULTS, ...JSON.parse(localStorage.getItem('ul-defaults') || '{}') }; } catch { return DEFAULTS; } };
 const tg = (k, l) => ({ k, l, t: 'toggle' });
 const rg = (k, l, min, max, step = 1, u = '') => ({ k, l, t: 'range', min, max, step, u });
@@ -28,6 +33,7 @@ const FIELDS = {
     { k: 'tileShape', l: 'Tile shape', t: 'select', o: [['rounded', 'Rounded'], ['square', 'Square'], ['circle', 'Circle']] },
     rg('tileScale', 'Max tile size', 60, 100, 5, '%'),
     { k: 'title', l: 'Title text', t: 'text' }, { k: 'footer', l: 'Footer text', t: 'text' },
+    { k: 'playerName', l: 'My name (Test / Offline guesses)', t: 'text' },
     tg('reduceMotion', 'Reduce animations')],
   layout: [
     tg('showTitle', 'Show title'), tg('showCategory', 'Show category banner'), tg('showTimer', 'Show timer'), tg('showHint', 'Show hint letters'),
@@ -37,7 +43,7 @@ const FIELDS = {
     rg('z1', 'Header height', 16, 30, 1, '%'), rg('z2', 'Puzzle height', 20, 45, 1, '%'), rg('z4', 'Footer height', 8, 25, 1, '%'),
     tg('sound', 'Sound effects'), rg('volume', 'Volume', 0, 100, 5, '%')],
   game: [
-    rg('roundSeconds', 'Round time', 20, 300, 5, 's'), rg('revealSeconds', 'Reveal time', 3, 30, 1, 's'),
+    rg('roundSeconds', 'Round time', 20, 300, 5, 's'), rg('revealSeconds', 'Reveal time', 3, 30, 1, 's'), tg('showAnswer', 'Show the answer at the end of each round'),
     rg('minLetters', 'Min letters', 3, 25), rg('maxLetters', 'Max letters', 3, 25), tg('allowMulti', 'Allow multi-word puzzles'),
     tg('spaceless', 'Accept answer without spaces'), tg('hints', 'Auto hints (reveal letters)'), rg('hintStart', 'First hint at', 10, 90, 5, '% of round'),
     rg('hintEvery', 'Next hint every', 3, 60, 1, 's'), rg('maxHints', 'Max hints', 0, 10),
@@ -133,16 +139,19 @@ export default function App() {
 
   const [s, setS] = useState(null), [cfg, setCfg] = useState(null), [cats, setCats] = useState([]), [pinReq, setPinReq] = useState(false);
   const [feed, setFeed] = useState([]), [left, setLeft] = useState(0), [popup, setPopup] = useState(null);
-  const [menu, setMenu] = useState(false), [panel, setPanel] = useState(null);
+  const [menu, setMenu] = useState(false), [mmenu, setMmenu] = useState(false), [panel, setPanel] = useState(null);
+  const [pm, setPm] = useState('test'), [tt, setTt] = useState({ status: 'off', user: '' }), [fb, setFb] = useState('');
+  const gref = useRef(null);
   const [pin, setPin] = useState(() => localStorage.getItem('ul-pin') || ''), [msg, setMsg] = useState('');
   const deadline = useRef(0);
 
   useEffect(() => {
     socket.on('state', st => { setS(st); deadline.current = Date.now() + st.remaining * 1000; setLeft(st.remaining); });
-    socket.on('settings', x => { setCfg(x.cfg); setCats(x.cats); setPinReq(x.pinRequired); setHasDef(!!x.hasDefaults); });
+    socket.on('settings', x => { setCfg(x.cfg); setCats(x.cats); setPinReq(x.pinRequired); setHasDef(!!x.hasDefaults); setPm(x.playMode || 'test'); setTt(x.tt || { status: 'off', user: '' }); });
+    socket.on('feedClear', () => setFeed([]));
     socket.on('feed', items => setFeed(f => [...f, ...items].slice(-30)));
     const iv = setInterval(() => { if (!paused.current) setLeft(Math.max(0, Math.ceil((deadline.current - Date.now()) / 1000))); }, 250);
-    return () => { clearInterval(iv); socket.off('state'); socket.off('settings'); socket.off('feed'); };
+    return () => { clearInterval(iv); socket.off('state'); socket.off('settings'); socket.off('feed'); socket.off('feedClear'); };
   }, []);
   const paused = useRef(false);
   paused.current = !!s?.paused;
@@ -191,6 +200,20 @@ export default function App() {
       flash(factory ? '🏭 Factory settings restored' : '↩️ Defaults restored'); closePanel();
     });
   };
+  const flashFb = v => { setFb(v); setTimeout(() => setFb(''), 700); };
+  const sendGuess = e => {   // Test + Offline: type your own guess
+    e.preventDefault();
+    const text = e.target.g.value.trim(); e.target.reset(); gref.current?.focus();
+    if (!text) return;
+    socket.emit('guess', { user: L.playerName || 'Me', text, pin }, r => {
+      if (r && !r.ok) { flash(r.error); if (pinReq) openPanel('admin'); } else flashFb(r?.correct ? 'yes' : 'no');
+    });
+  };
+  const setMode = m => { setMmenu(false); admin('mode', { mode: m }); flash(MODES[m][0] + ' ' + MODES[m][2] + ' - fresh round'); };
+  const toggleAnswer = () => {   // quick switch: takes effect at the end of the current round
+    const v = !cfg?.showAnswer; setCfg(c => ({ ...c, showAnswer: v })); setDraft(d => (d?.cfg ? { ...d, cfg: { ...d.cfg, showAnswer: v } } : d));
+    admin('set', { patch: { showAnswer: v } }); flash(v ? '👁️ Answer will be shown' : '🙈 Answer will be hidden');
+  };
   const fullscreen = () => { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.(); };
 
   if (!s) return <div className="stage" style={theme.v}><p className="wait">Connecting…</p></div>;
@@ -204,6 +227,15 @@ export default function App() {
 
   return (
     <div className={'stage' + (L.reduceMotion ? ' calm' : '')} style={style}>
+      {mmenu && (
+        <div className="menu wide">
+          {Object.entries(MODES).map(([k, x]) => (
+            <button key={k} className={k === pm ? 'on' : ''} onClick={() => setMode(k)}><span>{x[0]}</span><div><b>{x[2]}</b><small>{x[3]}</small></div></button>
+          ))}
+          {pm === 'live' && TT_TEXT[tt.status] && <p className="note">{TT_TEXT[tt.status]}{tt.user && tt.status !== 'nouser' ? ' (@' + tt.user + ')' : ''}</p>}
+          <p className="note">Switching mode clears the leaderboard and starts a fresh round.</p>
+        </div>
+      )}
       {menu && (
         <div className="menu">
           {Object.entries(THEMES).map(([k, x]) => (
@@ -214,11 +246,13 @@ export default function App() {
 
       {/* ALWAYS-VISIBLE HOST TOOLBAR */}
       <nav className="bar">
-        <button onClick={() => setMenu(m => !m)} title="Theme">{theme.icon}</button>
+        <button className={'mode m-' + pm} onClick={() => { setMmenu(m => !m); setMenu(false); }} title="Mode: Test / Live / Offline">{MODES[pm][0]}<small>{MODES[pm][1]}</small></button>
+        <button onClick={() => { setMenu(m => !m); setMmenu(false); }} title="Theme">{theme.icon}</button>
         <button className={s.paused ? 'hot' : ''} onClick={() => admin('pause')} title={s.paused ? 'Resume' : 'Pause'}>{s.paused ? '▶️' : '⏸️'}</button>
         <button onClick={() => admin('skip')} title="Skip / next round">⏭️</button>
         <button className={cfg?.mode === 'specific' ? 'hot' : ''} onClick={() => (panel === 'cats' ? closePanel() : openPanel('cats'))} title="Categories">🗂️</button>
         <button onClick={() => admin('hint')} title="Give a hint now">💡</button>
+        <button className={cfg && !cfg.showAnswer ? 'hot' : ''} onClick={toggleAnswer} title={cfg?.showAnswer ? 'Answer is shown at round end (tap to hide)' : 'Answer is hidden at round end (tap to show)'}>{cfg && !cfg.showAnswer ? '🙈' : '👁️'}</button>
         <button onClick={() => admin('time')} title="Add 15 seconds">⏰</button>
         <button className={L.sound ? 'hot' : ''} onClick={() => setLocal('sound', !L.sound)} title="Sound on/off">{L.sound ? '🔔' : '🔕'}</button>
         <button onClick={fullscreen} title="Full screen">⛶</button>
@@ -233,7 +267,7 @@ export default function App() {
 
       {/* ZONE 2 - puzzle board */}
       <section className="z z2">
-        <Board text={reveal ? s.answer : s.scrambled} solved={reveal} scale={L.tileScale} />
+        <Board text={reveal && s.answer ? s.answer : s.scrambled} solved={reveal && (!!s.answer || !!s.winner)} scale={L.tileScale} />
         <FitText className={'hint' + hid(L.showHint && !reveal && !!s.hint)} dep={s.hint}>{s.hint ? [...s.hint].map(c => (c === ' ' ? '\u00a0' : c === '_' ? '•' : c)).join(' ') : '\u00a0'}</FitText>
         <div className={'strip' + hid(L.showTimer)}>
           {!reveal && <i className="bar-fill" style={{ width: (left / s.total) * 100 + '%' }} />}
@@ -249,7 +283,7 @@ export default function App() {
           {L.showPopup && popup && (
             <div className="pop" key={s.round}>
               <Avatar pic={popup.pic} name={popup.user} size="11cqw" />
-              <div className="txt"><b>@{popup.user}</b><FitText as="span" className="wd" dep={popup.word}>{popup.word}</FitText></div>
+              <div className="txt"><b>@{popup.user}</b><FitText as="span" className="wd" dep={popup.word}>{popup.word || '🎉 Correct!'}</FitText></div>
               <div className="pt">+{popup.pts}</div>
             </div>
           )}
@@ -275,12 +309,16 @@ export default function App() {
 
       {/* ZONE 4 - footer */}
       <footer className="z z4">
-        <p className={hid(L.showFooter)}>{L.footer}</p>
-        {TEST && (
-          <form className="test" onSubmit={e => { e.preventDefault(); socket.emit('testGuess', { user: 'tester', text: e.target.g.value }); e.target.reset(); }}>
-            <input name="g" placeholder="test guess" autoComplete="off" />
+        {pm !== 'offline' && <p className={hid(L.showFooter)}>{L.footer}</p>}
+        {pm !== 'live' && (
+          <form className={'play' + (fb ? ' ' + fb : '')} onSubmit={sendGuess}>
+            <input ref={gref} name="g" autoComplete="off" autoCapitalize="none" placeholder={pm === 'offline' ? '✍️ Type your guess…' : '🧪 Type a test guess…'} />
+            <button type="submit" title="Send guess">➤</button>
+            {pm === 'test' && <button type="button" title="Solve as a fake viewer" onClick={() => admin('testSolve')}>✅</button>}
+            {pm === 'test' && <button type="button" title="Send fake chat messages" onClick={() => admin('testChat')}>💬</button>}
           </form>
         )}
+        {pm === 'test' && s.peek && !reveal && <small className="peek">🔎 Answer: {s.peek}</small>}
       </footer>
 
       {toast && <div className="toast">{toast}</div>}
@@ -324,6 +362,7 @@ export default function App() {
               <>
                 {pinReq && <label className="fld text"><span>Admin PIN</span>
                   <input type="password" value={pin} onChange={e => { setPin(e.target.value); localStorage.setItem('ul-pin', e.target.value); }} /></label>}
+                <p className="note">Mode: <b>{MODES[pm][0]} {MODES[pm][2]}</b> (change it with the first toolbar button)</p>
                 <button className="act" onClick={() => admin('pause')}>{s.paused ? '▶️ Resume game' : '⏸️ Pause game'}</button>
                 <button className="act" onClick={() => admin('skip')}>⏭️ Skip round</button>
                 <button className="act" onClick={() => window.confirm('Reset the leaderboard?') && admin('reset')}>🧹 Reset leaderboard</button>

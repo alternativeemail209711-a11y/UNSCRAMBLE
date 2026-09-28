@@ -23,7 +23,7 @@ const CATS = Object.keys(DB).filter(c => DB[c].length && !BANNED.test(c));
 console.log(`Loaded ${CATS.length} categories from ${path.basename(dbFile)}`);
 
 // ---------- host-adjustable game settings ----------
-const DEF = { roundSeconds: +process.env.ROUND_SECONDS || 90, revealSeconds: 10, minLetters: 5, maxLetters: 20,
+const DEF = { roundSeconds: +process.env.ROUND_SECONDS || 90, revealSeconds: 10, showAnswer: true, minLetters: 5, maxLetters: 20,
   allowMulti: true, spaceless: true, hints: true, hintStart: 40, hintEvery: 10, maxHints: 3,
   basePoints: 10, speedBonus: 10, hintPenalty: 2, disabled: [], mode: 'random', picked: [] };
 const RANGE = { roundSeconds: [20, 300], revealSeconds: [3, 30], minLetters: [3, 25], maxLetters: [3, 25], hintStart: [10, 90],
@@ -40,13 +40,29 @@ let saveT;
 function applyPatch(p) {
   for (const [k, v] of Object.entries(p || {})) {
     if (RANGE[k] && typeof v === 'number') cfg[k] = Math.min(RANGE[k][1], Math.max(RANGE[k][0], Math.round(v)));
-    else if (['allowMulti', 'spaceless', 'hints'].includes(k)) cfg[k] = !!v;
+    else if (['allowMulti', 'spaceless', 'hints', 'showAnswer'].includes(k)) cfg[k] = !!v;
     else if ((k === 'disabled' || k === 'picked') && Array.isArray(v)) cfg[k] = v.filter(c => CATS.includes(c));
     else if (k === 'mode' && ['random', 'specific'].includes(v)) cfg.mode = v;
   }
   if (cfg.minLetters > cfg.maxLetters) cfg.maxLetters = cfg.minLetters;
   clearTimeout(saveT); saveT = setTimeout(() => persist(SFILE, cfg), 1000);
 }
+
+// ---------- play mode: test | live | offline ----------
+//  test    -> TikTok chat OFF. Guess box + ✅ solve / 💬 fake-chat buttons, answer peek. For trying games before going live / after upgrades.
+//  live    -> TikTok chat ON. Guess box hidden. For streaming.
+//  offline -> TikTok chat OFF. Guess box on screen so the host can play alone.
+const MODES = ['test', 'live', 'offline'];
+const MFILE = path.join(DATA_DIR, 'mode.json');
+let playMode = (() => {
+  const env = String(process.env.APP_MODE || '').toLowerCase();
+  if (MODES.includes(env)) return env;
+  if (TEST_MODE) return 'test';                       // legacy TEST_MODE=1 still works
+  const saved = readJSON(MFILE).mode;
+  if (MODES.includes(saved)) return saved;
+  return process.env.TIKTOK_USERNAME ? 'live' : 'test';
+})();
+console.log('Play mode: ' + playMode);
 
 // ---------- helpers ----------
 const norm = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -93,8 +109,9 @@ let round = 0, current = null, phaseEnd = 0, paused = false, pausedAt = 0, revea
 let state = { phase: 'playing', round: 0, category: '', scrambled: '', answer: null, winner: null, winnerInfo: null, hint: '', total: cfg.roundSeconds };
 
 const top = () => [...users.values()].sort((a, b) => b.score - a.score).slice(0, 10);
-const snap = () => ({ ...state, paused, remaining: Math.max(0, Math.ceil((phaseEnd - (paused ? pausedAt : Date.now())) / 1000)), leaderboard: top() });
-const pub = () => ({ cfg, cats: CATS, pinRequired: !!ADMIN_PIN, hasDefaults: Object.keys(userDef).length > 0 });
+const snap = () => ({ ...state, paused, peek: playMode === 'test' && current ? current.answer : '', remaining: Math.max(0, Math.ceil((phaseEnd - (paused ? pausedAt : Date.now())) / 1000)), leaderboard: top() });
+const pub = () => ({ cfg, cats: CATS, pinRequired: !!ADMIN_PIN, hasDefaults: Object.keys(userDef).length > 0,
+  playMode, tt: { status: ttStatus, user: (process.env.TIKTOK_USERNAME || '').replace(/^@/, '') } });
 
 const app = express(), server = http.createServer(app), io = new Server(server);
 const broadcast = () => io.emit('state', snap());
@@ -114,12 +131,12 @@ function endRound(w) {
     const pts = Math.max(1, Math.round(cfg.basePoints + cfg.speedBonus * left / state.total - cfg.hintPenalty * revealed.size));
     const u = users.get(w.user) || { user: w.user, pic: '', score: 0, wins: 0, words: [] };
     if (w.pic) u.pic = w.pic;
-    u.score += pts; u.wins++; u.words = [...u.words, current.answer].slice(-6);
+    u.score += pts; u.wins++; if (cfg.showAnswer) u.words = [...u.words, current.answer].slice(-6);   // hidden answers never leak via the leaderboard
     users.set(w.user, u);
-    info = { user: u.user, pic: u.pic, pts, word: current.answer };
+    info = { user: u.user, pic: u.pic, pts, word: cfg.showAnswer ? current.answer : '' };
   }
   phaseEnd = Date.now() + cfg.revealSeconds * 1000; if (paused) pausedAt = Date.now();
-  state = { ...state, phase: 'reveal', answer: current.answer, winner: w ? w.user : null, winnerInfo: info };
+  state = { ...state, phase: 'reveal', answer: cfg.showAnswer ? current.answer : null, winner: w ? w.user : null, winnerInfo: info };
   broadcast();
 }
 function revealOne() {
@@ -147,25 +164,42 @@ setInterval(() => { if (feedBuf.length) { io.emit('feed', feedBuf); feedBuf = []
 function onGuess(user, text, pic) {
   user = String(user || 'viewer').replace(/^@/, '');
   text = String(text || '').slice(0, 60);
-  if (!norm(text)) return;
+  if (!norm(text)) return false;
   if (pic) { pics.set(user, pic); if (pics.size > 3000) pics.delete(pics.keys().next().value); }
   const ok = state.phase === 'playing' && !paused &&
     (cfg.spaceless ? norm(text) === norm(current.answer) : normStrict(text) === current.answer);
   feedBuf.push({ id: ++feedId, user, text: ok ? '✅ got it!' : text, ok, pic: pics.get(user) || '' });
   if (feedBuf.length > 40) feedBuf.shift();
   if (ok) endRound({ user, pic: pics.get(user) || '' });
+  return !!ok;
 }
 
 // ---------- TikTok ----------
 const picOf = x => Array.isArray(x) ? picOf(x[0]) : (x && typeof x === 'object') ? picOf(x.url ?? x.urls ?? x.urlList) : (typeof x === 'string' && /^https?:/.test(x) ? x : '');
-let retrying = false;
+let ttConn = null, ttTimer = null, ttStatus = 'off';   // off | nouser | connecting | connected | retrying
+const setTT = st => { if (ttStatus !== st) { ttStatus = st; io.emit('settings', pub()); } };
+function disconnectTikTok() {
+  clearTimeout(ttTimer); ttTimer = null;
+  const c = ttConn; ttConn = null;
+  if (c) { try { Promise.resolve(c.disconnect()).catch(() => {}); } catch { /* ignore */ } }
+  setTT('off');
+}
 function connectTikTok() {
+  if (playMode !== 'live') return;                    // only Live mode listens to TikTok chat
   const name = (process.env.TIKTOK_USERNAME || '').replace(/^@/, '');
-  if (!name) return console.log('TIKTOK_USERNAME not set -> chat disabled (use TEST_MODE=1 and /?test=1)');
-  retrying = false;
+  if (!name) { setTT('nouser'); return console.log('TIKTOK_USERNAME not set -> cannot read chat in Live mode'); }
+  clearTimeout(ttTimer); ttTimer = null;
   const conn = new TikTokLiveConnection(name, { signApiKey: process.env.TIKTOK_SIGN_API_KEY });
-  const retry = why => { if (retrying) return; retrying = true; console.log(`TikTok not connected (${why}). Retrying in 15s - you must be LIVE first.`); setTimeout(connectTikTok, 15000); };
+  ttConn = conn; setTT('connecting');
+  let retried = false;
+  const alive = () => conn === ttConn && playMode === 'live';   // false once the host switched mode
+  const retry = why => {
+    if (!alive() || retried) return; retried = true; setTT('retrying');
+    console.log(`TikTok not connected (${why}). Retrying in 15s - you must be LIVE first.`);
+    ttTimer = setTimeout(() => { if (conn === ttConn) { ttConn = null; connectTikTok(); } }, 15000);
+  };
   conn.on('chat', d => {
+    if (!alive()) return;
     const u = d.user || {};
     const text = d.comment ?? d.text ?? d.content;
     const id = u.uniqueId ?? d.uniqueId ?? u.nickname ?? d.nickname;
@@ -174,14 +208,35 @@ function connectTikTok() {
   });
   conn.on('disconnected', () => retry('disconnected'));
   conn.on('error', e => console.error('TikTok error:', e?.message || e));
-  conn.connect().then(() => console.log('TikTok connected to @' + name)).catch(e => retry(e?.message || e));
+  conn.connect().then(() => {
+    if (!alive()) { try { Promise.resolve(conn.disconnect()).catch(() => {}); } catch { /* ignore */ } return; }
+    setTT('connected'); console.log('TikTok connected to @' + name);
+  }).catch(e => retry(e?.message || e));
 }
+
+function setMode(m) {
+  if (!MODES.includes(m) || m === playMode) return;
+  playMode = m; persist(MFILE, { mode: m });
+  disconnectTikTok();
+  users.clear(); feedBuf = [];                        // test/offline scores must never leak into a live show
+  io.emit('feedClear');
+  if (m === 'live') connectTikTok();
+  io.emit('settings', pub()); startRound();
+  console.log('Play mode -> ' + m);
+}
+const FAKE_USERS = ['luna_x', 'mike99', 'sarah.j', 'tiktokfan', 'bella.b', 'jayden_'], FAKE_WORDS = ['apple', 'hello', 'cat', 'pizza', 'wow', 'maybe', 'nope', 'lol'];
 
 // ---------- web + admin ----------
 io.on('connection', socket => {
   socket.emit('settings', pub());
   socket.emit('state', snap());
-  if (TEST_MODE) socket.on('testGuess', ({ user, text }) => onGuess(user || 'tester', text, ''));
+  // Guess box (Test + Offline mode only). Live mode = guesses come from TikTok chat only.
+  socket.on('guess', (m, ack) => {
+    const done = r => typeof ack === 'function' && ack(r);
+    if (playMode === 'live') return done({ ok: false, error: 'Guess box is disabled in Live mode' });
+    if (ADMIN_PIN && m?.pin !== ADMIN_PIN) return done({ ok: false, error: 'Wrong or missing PIN' });
+    done({ ok: true, correct: onGuess(String(m?.user || 'Me').slice(0, 24), m?.text, '') });
+  });
   socket.on('admin', (m, ack) => {
     const done = r => typeof ack === 'function' && ack(r);
     if (ADMIN_PIN && m?.pin !== ADMIN_PIN) return done({ ok: false, error: 'Wrong or missing PIN' });
@@ -195,6 +250,9 @@ io.on('connection', socket => {
         if (m.factory) { userDef = {}; try { fs.unlinkSync(DFILE); } catch {} }
         cfg = { ...DEF, ...JSON.parse(JSON.stringify(userDef)) }; persist(SFILE, cfg);
         io.emit('settings', pub()); startRound(); break;
+      case 'mode': setMode(m.mode); break;
+      case 'testSolve': if (playMode === 'test' && state.phase === 'playing' && current) onGuess(FAKE_USERS[Math.floor(Math.random() * FAKE_USERS.length)], current.answer, ''); break;
+      case 'testChat': if (playMode === 'test') for (let i = 0; i < 5; i++) onGuess(FAKE_USERS[Math.floor(Math.random() * FAKE_USERS.length)], FAKE_WORDS[Math.floor(Math.random() * FAKE_WORDS.length)], ''); break;
       case 'pause': if (!paused) { paused = true; pausedAt = Date.now(); } else { phaseEnd += Date.now() - pausedAt; paused = false; } broadcast(); break;
       case 'skip': state.phase === 'playing' ? endRound(null) : startRound(); break;
       case 'hint': if (state.phase === 'playing' && !paused && revealOne()) { state.hint = mask(); broadcast(); } break;
@@ -209,4 +267,4 @@ const dist = R('client/dist');
 app.get('/health', (_, res) => res.send('ok'));
 app.use(express.static(dist));
 app.use((_, res) => res.sendFile(path.join(dist, 'index.html')));
-server.listen(PORT, () => { console.log('Listening on ' + PORT); startRound(); connectTikTok(); });
+server.listen(PORT, () => { console.log('Listening on ' + PORT); startRound(); connectTikTok(); });   // connectTikTok only acts in Live mode

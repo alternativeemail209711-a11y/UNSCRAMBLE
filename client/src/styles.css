@@ -37,14 +37,8 @@ h1{flex:none;max-width:100%;font-size:calc(7.4cqw*var(--fs));line-height:1.15;fo
 .strip span{position:relative;padding:0 2cqw;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bar-fill{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,var(--a1),var(--a2));opacity:.35;transition:width .3s linear}
 .winner{color:var(--gold)}
-/* ZONE 3: reserved winner slot, leaderboard, feed (feed takes what is left) */
-.z3{padding-top:.5cqw;padding-bottom:1cqw;gap:1.5cqw}
-.slot{flex:none;height:14cqw}
-.pop{height:100%;display:flex;align-items:center;gap:3cqw;padding:0 3cqw;border-radius:3.5cqw;background:var(--bg1);border:.6cqw solid var(--gold);box-shadow:0 1cqw 3cqw #0005;animation:in-up .4s both,bounce 1.6s ease-in-out infinite}
-.pop .txt{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.2}
-.pop b{font-size:calc(4.2cqw*var(--fs));color:var(--link);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pop .wd{font-size:calc(3.6cqw*var(--fs));font-weight:800;letter-spacing:.3cqw;white-space:nowrap;overflow:hidden}
-.pop .pt{flex:none;font-size:calc(6.5cqw*var(--fs));font-weight:900;color:var(--gold)}
+/* ZONE 3: mini leaderboard */
+.z3{padding-top:.5cqw;padding-bottom:1cqw;gap:1.5cqw;justify-content:flex-start}
 .av{flex:none;width:var(--s);height:var(--s);border-radius:50%;object-fit:cover;border:.5cqw solid var(--a1);background:var(--panel)}
 .av.ph{display:grid;place-items:center;font-size:calc(var(--s)*.5);font-weight:800;background:var(--a1);color:var(--bt)}
 .lb{flex:0 1 auto;min-height:0;display:flex;flex-direction:column;gap:1cqw;overflow:hidden}
@@ -56,11 +50,6 @@ h1{flex:none;max-width:100%;font-size:calc(7.4cqw*var(--fs));line-height:1.15;fo
 .who b{font-size:calc(3.5cqw*var(--fs))}
 .who em{font-style:normal;font-size:calc(2.9cqw*var(--fs));font-weight:700;color:var(--link)}
 .pts{flex:none;font-size:calc(4.4cqw*var(--fs));font-weight:900;color:var(--gold)}
-.feed{flex:1 1 0;min-height:0;display:flex;flex-direction:column;justify-content:flex-end;gap:1cqw;overflow:hidden}
-.msg{flex:none;display:flex;align-items:center;gap:2cqw;height:6.2cqw;padding:0 2.5cqw;border-radius:99px;background:var(--panel);font-size:calc(3.7cqw*var(--fs));animation:in-up .2s both}
-.msg span:last-child{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.msg b{color:var(--link)}
-.msg.ok{background:#19c46b55}
 /* ZONE 4 */
 .z4{align-items:center;justify-content:flex-start;padding-top:1.5cqw;gap:1.5cqw}
 .z4 p{flex:0 1 auto;min-height:0;overflow:hidden;max-width:100%;font-size:calc(4.2cqw*var(--fs));line-height:1.25;font-weight:800;text-align:center}
@@ -112,3 +101,35 @@ h1{flex:none;max-width:100%;font-size:calc(7.4cqw*var(--fs));line-height:1.15;fo
 .toast{position:absolute;z-index:40;left:50%;top:15cqw;transform:translateX(-50%);padding:2cqw 5cqw;border-radius:99px;background:var(--a1);color:var(--bt);font-size:4cqw;font-weight:800;white-space:nowrap;box-shadow:0 1cqw 3cqw #0005;animation:in-up .25s both}
 
 .play button.hot{background:linear-gradient(var(--a1),var(--a2));color:var(--bt);box-shadow:0 0 0 .8cqw var(--a1)}
+
+/* GUESS WINDOW: floating card in its own grid row directly under the category (never overlaps the puzzle) */
+.zg{padding:1cqw 3cqw}
+.gwin{flex:1 1 0;min-height:0;display:flex;flex-direction:column;justify-content:flex-end;gap:1cqw;padding:1.2cqw 2cqw;overflow:hidden;border-radius:5cqw;background:var(--panel);border:.5cqw solid #fff9;box-shadow:0 1.2cqw 3cqw #0003;backdrop-filter:blur(6px);animation:float 4s ease-in-out infinite}
+.gmsg{flex:none;height:var(--gh);display:flex;align-items:center;gap:2cqw;animation:in-up .25s both;border-radius:99px}
+.gmsg .gtx{min-width:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:calc(var(--gh)*.46*var(--fs));font-weight:700}
+.gmsg b{color:var(--link)}
+.gmsg.ok{background:#19c46b55;padding-right:2cqw}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-.4cqw)}}
+/* CENTRE OVERLAY (winner window + full leaderboard). Sits under the toolbar, above the puzzle; never blocks taps. */
+.ov{position:absolute;inset:12cqw 0 0 0;z-index:15;display:grid;place-items:center;pointer-events:none;animation:fade .3s both}
+.ov.lbv{background:#0006}
+.pop{width:82cqw;display:flex;flex-direction:column;align-items:center;gap:2.2cqw;padding:5cqw 4cqw 4cqw;border-radius:7cqw;background:var(--bg1);border:1cqw solid var(--gold);box-shadow:0 2cqw 8cqw #000a,0 0 0 1.2cqw #fff6;animation:pop .5s cubic-bezier(.34,1.56,.64,1) both}
+.pop .av{width:var(--s);height:var(--s);border-width:1cqw;box-shadow:0 0 0 1.2cqw var(--gold)}
+.pop .av.ph{font-size:calc(var(--s)*.5)}
+.pop .pn{max-width:100%;font-size:calc(6.4cqw*var(--fs));color:var(--link);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pop .wd{max-width:100%;font-size:calc(9cqw*var(--fs));font-weight:900;letter-spacing:.6cqw;text-align:center;white-space:nowrap;overflow:hidden;color:var(--text)}
+.pop .pt{font-size:calc(9cqw*var(--fs));font-weight:900;color:var(--gold);line-height:1}
+.fb{width:92cqw;padding:3cqw;border-radius:6cqw;background:var(--bg1);border:.8cqw solid var(--gold);box-shadow:0 2cqw 8cqw #000a;animation:pop .45s cubic-bezier(.34,1.56,.64,1) both}
+.fb h2{text-align:center;font-size:calc(6.4cqw*var(--fs));margin-bottom:2cqw;color:var(--gold)}
+.fbwin{overflow:hidden}
+.fblist{display:flex;flex-direction:column;gap:1cqw}
+.fblist.scroll{animation:lbscroll var(--secs) linear .8s both}
+@keyframes lbscroll{from{transform:translateY(0)}to{transform:translateY(calc(var(--d)*-1))}}
+.fbrow{flex:none;height:calc(var(--rh)*1cqw);display:flex;align-items:center;gap:2cqw;padding:0 2.5cqw 0 1cqw;border-radius:99px;background:var(--panel);border:.4cqw solid #fff8}
+.fbrow.new{background:linear-gradient(90deg,var(--a1),var(--a2));color:var(--bt)}
+.fbrow.new .who b,.fbrow.new .who em,.fbrow.new .pts{color:var(--bt)}
+.fbrow .rk{width:calc(var(--rh)*.8cqw);font-size:calc(var(--rh)*.44cqw)}
+.fbrow .who b{font-size:calc(var(--rh)*.4cqw*var(--fs))}
+.fbrow .who em{font-size:calc(var(--rh)*.31cqw*var(--fs))}
+.fbrow .pts{font-size:calc(var(--rh)*.5cqw*var(--fs))}
+@keyframes fade{from{opacity:0}to{opacity:1}}

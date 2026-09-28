@@ -29,8 +29,20 @@ The 🤖 button (bottom row in Test mode) starts/stops fake viewers who guess by
 ## Scoring (fixed)
 One winner per round: the first correct guess ends the round and earns **1 point**. The leaderboard only lists real winners (no empty "waiting" rows).
 
+## Guess window (new)
+A floating card sits in its own row directly under the category banner — it has its own space in the layout, so it can **never overlap or cover the puzzle letters**, however many lines it shows. It lists each viewer's exact circular TikTok profile picture next to their guess, live, as they type in chat. Turn it on/off and resize it in ⚙️ → Layout ("Show guess window" / "Guess window height" / "Guess window lines").
+
+## Winner window -> leaderboard (new)
+When a viewer guesses correctly: their exact circular TikTok profile picture and the correct answer pop up in a card centered on screen, for a duration you set in ⚙️ → Game ("Winner window duration"). It's then automatically followed by a full-screen leaderboard of **every player who has gained points** (not just the top few), for a duration you also set ("Full leaderboard duration") — long lists auto-scroll to show everyone. Turn either stage off in ⚙️ → Layout ("Show winner window in the centre" / "Show mini leaderboard"). Nobody solving the round (time runs out) skips straight to the next round using the plain "Reveal time" instead.
+
 ## Show / hide the answer
-👁️/🙈 toolbar button (or ⚙️ Game -> "Show the answer at the end of each round"). When hidden, the answer never leaves the server: not on the board, not in the winner window, not in the leaderboard's recent words. The scrambled letters stay on screen, and the strip still says who won / "Time's up!". The toolbar switch takes effect from the end of the current round.
+Two independent switches, because "someone guessed it" and "nobody guessed it" are different situations:
+- 👁️/🙈 toolbar button (or ⚙️ Game → "Show the answer when a viewer guesses it correctly") — controls the word shown in the guess window, the winner window, and the leaderboard's recent-words list.
+- ⚙️ Game → "Show the answer when time runs out" — controls whether the answer is revealed on the puzzle board when nobody solves it in time.
+Either way, when a switch is off the answer never leaves the server for that case. The toolbar switch takes effect from the end of the current round.
+
+## Exact TikTok profile pictures
+Every avatar (guess window, winner window, leaderboards) loads the viewer's real circular TikTok picture through a small built-in image proxy (`/avatar`), so pictures show reliably instead of being blocked by hotlink/referrer restrictions, and `.heic` pictures TikTok sometimes sends are skipped in favor of a displayable format. If a picture still can't load, that viewer gets a colored circle with their initial instead of a broken image.
 
 ## Host toolbar (always visible, top of screen)
 🧪🔴🎮 mode · 🎨 theme · ⏸ pause/resume · ⏭ skip · 🗂 categories · 💡 hint now · 👁️ show/hide answer · ⏰ +15s · 🔔 sound · ⛶ full screen · ⚙️ settings

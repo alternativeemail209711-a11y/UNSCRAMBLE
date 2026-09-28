@@ -23,10 +23,10 @@ const CATS = Object.keys(DB).filter(c => DB[c].length && !BANNED.test(c));
 console.log(`Loaded ${CATS.length} categories from ${path.basename(dbFile)}`);
 
 // ---------- host-adjustable game settings ----------
-const DEF = { roundSeconds: +process.env.ROUND_SECONDS || 90, revealSeconds: 10, showAnswer: true, minLetters: 5, maxLetters: 20,
+const DEF = { roundSeconds: +process.env.ROUND_SECONDS || 90, revealSeconds: 10, showAnswer: true, showAnswerWin: true, popupSecs: 8, showLbOverlay: true, lbSecs: 10, minLetters: 5, maxLetters: 20,
   allowMulti: true, spaceless: true, hints: true, hintStart: 40, hintEvery: 10, maxHints: 3,
   botOn: false, botEvery: 4, botSkill: 80, disabled: [], mode: 'random', picked: [] };
-const RANGE = { roundSeconds: [20, 300], revealSeconds: [3, 30], minLetters: [3, 25], maxLetters: [3, 25], hintStart: [10, 90],
+const RANGE = { roundSeconds: [20, 300], revealSeconds: [3, 30], popupSecs: [2, 30], lbSecs: [3, 60], minLetters: [3, 25], maxLetters: [3, 25], hintStart: [10, 90],
   hintEvery: [3, 60], maxHints: [0, 10], botEvery: [1, 30], botSkill: [0, 100] };
 // DATA_DIR (optional env): point it at a persistent disk so saved settings survive redeploys
 const DATA_DIR = process.env.DATA_DIR || R('data');
@@ -40,7 +40,7 @@ let saveT;
 function applyPatch(p) {
   for (const [k, v] of Object.entries(p || {})) {
     if (RANGE[k] && typeof v === 'number') cfg[k] = Math.min(RANGE[k][1], Math.max(RANGE[k][0], Math.round(v)));
-    else if (['allowMulti', 'spaceless', 'hints', 'showAnswer', 'botOn'].includes(k)) cfg[k] = !!v;
+    else if (['allowMulti', 'spaceless', 'hints', 'showAnswer', 'showAnswerWin', 'showLbOverlay', 'botOn'].includes(k)) cfg[k] = !!v;
     else if ((k === 'disabled' || k === 'picked') && Array.isArray(v)) cfg[k] = v.filter(c => CATS.includes(c));
     else if (k === 'mode' && ['random', 'specific'].includes(v)) cfg.mode = v;
   }
@@ -116,10 +116,14 @@ const users = new Map();     // user -> {user, pic, score, wins, words[]}
 const pics = new Map();      // user -> latest profile picture url
 let botPlan = { solveAt: null, nextChat: 0 };
 let round = 0, current = null, phaseEnd = 0, paused = false, pausedAt = 0, revealed = new Set();
-let state = { phase: 'playing', round: 0, category: '', scrambled: '', answer: null, winner: null, winnerInfo: null, hint: '', total: cfg.roundSeconds };
+let state = { phase: 'playing', round: 0, category: '', scrambled: '', answer: null, winner: null, winnerInfo: null, hint: '', total: cfg.roundSeconds, popupSecs: 0, lbSecs: 0 };
 
 const top = () => [...users.values()].sort((a, b) => b.score - a.score).slice(0, 10);
-const snap = () => ({ ...state, paused, peek: playMode === 'test' && current ? current.answer : '', remaining: Math.max(0, Math.ceil((phaseEnd - (paused ? pausedAt : Date.now())) / 1000)), leaderboard: top() });
+// everybody who gained points (used by the full-screen leaderboard that follows the winner window)
+const everyone = () => [...users.values()].filter(u => u.score > 0).sort((a, b) => b.score - a.score || (a.t || 0) - (b.t || 0))
+  .map(u => ({ user: u.user, pic: u.pic, score: u.score, wins: u.wins, words: u.words.slice(-1) }));
+const snap = () => ({ ...state, paused, peek: playMode === 'test' && current ? current.answer : '', remaining: Math.max(0, Math.ceil((phaseEnd - (paused ? pausedAt : Date.now())) / 1000)), leaderboard: top(),
+  full: state.phase === 'reveal' && state.winner ? everyone() : [] });
 const pub = () => ({ cfg, cats: CATS, pinRequired: !!ADMIN_PIN, hasDefaults: Object.keys(userDef).length > 0,
   playMode, tt: { status: ttStatus, user: ttCreds().name, hasKey: !!ttCreds().key, keyHint: keyHint(ttCreds().key) } });
 
@@ -130,7 +134,7 @@ const mask = () => [...current.answer].map((c, i) => c === ' ' ? ' ' : revealed.
 function startRound() {
   current = pick(); round++; revealed = new Set(); planBot();
   phaseEnd = Date.now() + cfg.roundSeconds * 1000; if (paused) pausedAt = Date.now();
-  state = { phase: 'playing', round, category: current.category, scrambled: scramble(current.answer), answer: null, winner: null, winnerInfo: null, hint: '', total: cfg.roundSeconds };
+  state = { phase: 'playing', round, category: current.category, scrambled: scramble(current.answer), answer: null, winner: null, winnerInfo: null, hint: '', total: cfg.roundSeconds, popupSecs: 0, lbSecs: 0 };
   broadcast();
 }
 function endRound(w) {
@@ -138,14 +142,19 @@ function endRound(w) {
   let info = null;
   if (w) {
     const pts = 1;                                    // fixed: 1 point per correct guess, one winner per round
-    const u = users.get(w.user) || { user: w.user, pic: '', score: 0, wins: 0, words: [] };
+    const u = users.get(w.user) || { user: w.user, pic: '', score: 0, wins: 0, words: [], t: 0 };
     if (w.pic) u.pic = w.pic;
-    u.score += pts; u.wins++; if (cfg.showAnswer) u.words = [...u.words, current.answer].slice(-6);   // hidden answers never leak via the leaderboard
+    u.score += pts; u.wins++; u.t = Date.now();
+    if (cfg.showAnswerWin) u.words = [...u.words, current.answer].slice(-6);   // hidden answers never leak via the leaderboard
     users.set(w.user, u);
-    info = { user: u.user, pic: u.pic, pts, word: cfg.showAnswer ? current.answer : '' };
+    info = { user: u.user, pic: u.pic, pts, word: cfg.showAnswerWin ? current.answer : '' };
   }
-  phaseEnd = Date.now() + cfg.revealSeconds * 1000; if (paused) pausedAt = Date.now();
-  state = { ...state, phase: 'reveal', answer: cfg.showAnswer ? current.answer : null, winner: w ? w.user : null, winnerInfo: info };
+  // Solved round: centre winner window (popupSecs) -> full leaderboard (lbSecs). Unsolved round: plain reveal time.
+  const lbSecs = w && cfg.showLbOverlay ? cfg.lbSecs : 0;
+  const secs = w ? cfg.popupSecs + lbSecs : cfg.revealSeconds;
+  phaseEnd = Date.now() + secs * 1000; if (paused) pausedAt = Date.now();
+  const showAns = w ? cfg.showAnswerWin : cfg.showAnswer;   // two separate switches: "guessed correctly" vs "time ran out"
+  state = { ...state, phase: 'reveal', answer: showAns ? current.answer : null, winner: w ? w.user : null, winnerInfo: info, popupSecs: w ? cfg.popupSecs : 0, lbSecs };
   broadcast();
 }
 function revealOne() {
@@ -207,14 +216,15 @@ function onGuess(user, text, pic) {
   if (pic) { pics.set(user, pic); if (pics.size > 3000) pics.delete(pics.keys().next().value); }
   const ok = state.phase === 'playing' && !paused &&
     (cfg.spaceless ? norm(text) === norm(current.answer) : normStrict(text) === current.answer);
-  feedBuf.push({ id: ++feedId, user, text: ok ? '✅ got it!' : text, ok, pic: pics.get(user) || '' });
+  feedBuf.push({ id: ++feedId, user, text: ok ? (cfg.showAnswerWin ? '✅ ' + text : '✅ got it!') : text, ok, pic: pics.get(user) || '' });
   if (feedBuf.length > 40) feedBuf.shift();
   if (ok) endRound({ user, pic: pics.get(user) || '' });
   return !!ok;
 }
 
 // ---------- TikTok ----------
-const picOf = x => Array.isArray(x) ? picOf(x[0]) : (x && typeof x === 'object') ? picOf(x.url ?? x.urls ?? x.urlList) : (typeof x === 'string' && /^https?:/.test(x) ? x : '');
+const allUrls = (x, out = []) => { if (Array.isArray(x)) x.forEach(v => allUrls(v, out)); else if (x && typeof x === 'object') Object.values(x).forEach(v => allUrls(v, out)); else if (typeof x === 'string' && /^https?:/.test(x)) out.push(x); return out; };
+const picOf = x => { const l = allUrls(x); return l.find(u => !/\.heic(\?|$)/i.test(u)) || l[0] || ''; };   // .heic does not display in most browsers
 let ttConn = null, ttTimer = null, ttStatus = 'off';   // off | nouser | connecting | connected | retrying
 const setTT = st => { if (ttStatus !== st) { ttStatus = st; io.emit('settings', pub()); } };
 function disconnectTikTok() {
@@ -242,7 +252,7 @@ function connectTikTok() {
     const u = d.user || {};
     const text = d.comment ?? d.text ?? d.content;
     const id = u.uniqueId ?? d.uniqueId ?? u.nickname ?? d.nickname;
-    const pic = picOf(u.profilePicture) || picOf(u.profilePictureUrl) || picOf(d.profilePictureUrl) || picOf(u.avatarThumb);
+    const pic = picOf(u.profilePicture) || picOf(u.profilePictureUrl) || picOf(d.profilePictureUrl) || picOf(u.avatarLarger) || picOf(u.avatarMedium) || picOf(u.avatarThumb);
     if (text) onGuess(id, text, pic);
   });
   conn.on('disconnected', () => retry('disconnected'));
@@ -313,6 +323,27 @@ io.on('connection', socket => {
 });
 const dist = R('client/dist');
 app.get('/health', (_, res) => res.send('ok'));
+// Profile-picture proxy: loads the exact TikTok picture on the server (no hot-link / referrer blocking, cached), only from TikTok CDN hosts.
+const avCache = new Map();
+const AV_HOST = /(^|\.)(tiktokcdn[\w-]*|tiktok|ibyteimg|byteimg|muscdn|byteoversea|tiktokv)\.(com|net|us)$/i;
+app.get('/avatar', async (req, res) => {
+  let url; try { url = new URL(String(req.query.u || '')); } catch { return res.status(400).end(); }
+  if (url.protocol !== 'https:' || !AV_HOST.test(url.hostname)) return res.status(400).end();
+  const key = url.href;
+  let hit = avCache.get(key);
+  if (!hit) {
+    try {
+      const r = await fetch(key, { headers: { 'User-Agent': 'Mozilla/5.0', Referer: 'https://www.tiktok.com/' }, signal: AbortSignal.timeout(6000) });
+      const type = r.headers.get('content-type') || '';
+      if (!r.ok || !/^image\/(jpe?g|png|webp|gif|avif)/i.test(type)) return res.status(502).end();
+      const buf = Buffer.from(await r.arrayBuffer());
+      if (buf.length > 1500000) return res.status(502).end();
+      hit = { type, buf }; avCache.set(key, hit);
+      if (avCache.size > 500) avCache.delete(avCache.keys().next().value);
+    } catch { return res.status(502).end(); }
+  }
+  res.set({ 'Content-Type': hit.type, 'Cache-Control': 'public, max-age=86400' }).send(hit.buf);
+});
 app.use(express.static(dist));
 app.use((_, res) => res.sendFile(path.join(dist, 'index.html')));
 server.listen(PORT, () => { console.log('Listening on ' + PORT); startRound(); connectTikTok(); });   // connectTikTok only acts in Live mode

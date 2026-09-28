@@ -14,8 +14,8 @@ const FONTS = {
 const RADIUS = { rounded: '18%', square: '6%', circle: '50%' };
 const DEFAULTS = { theme: 'cotton', font: 'cute', fontScale: 100, tileShape: 'rounded', tileScale: 100, title: 'UNSCRAMBLE LIVE',
   footer: 'Type the correct word(s) in the chat to win!', reduceMotion: false, showTitle: true, showCategory: true, showTimer: true,
-  showHint: true, showPopup: true, showLb: true, showFeed: true, showFooter: true, feedLines: 4, lbRows: 3, feedAvatars: true,
-  popupSecs: 8, z1: 20, z2: 28, z4: 12, sound: false, volume: 60, playerName: 'Me' };
+  showHint: true, showPopup: true, showLb: true, showFeed: true, showFooter: true, feedLines: 3, lbRows: 3,
+  z1: 17, zg: 16, z2: 32, z4: 12, sound: false, volume: 60, playerName: 'Me' };
 const MODES = {
   test: ['🧪', 'TEST', 'Test mode', 'Try games & upgrades. TikTok chat is OFF. Use the guess box, ✅ (solve), 💬 (fake chat) and 🤖 (auto-guessing bot).'],
   live: ['🔴', 'LIVE', 'Live mode', 'Go live on TikTok. Reads the TikTok chat. Guess box is hidden.'],
@@ -37,13 +37,15 @@ const FIELDS = {
     tg('reduceMotion', 'Reduce animations')],
   layout: [
     tg('showTitle', 'Show title'), tg('showCategory', 'Show category banner'), tg('showTimer', 'Show timer'), tg('showHint', 'Show hint letters'),
-    tg('showPopup', 'Show winner floating window'), tg('showLb', 'Show leaderboard'), tg('showFeed', 'Show guess feed'), tg('showFooter', 'Show footer'),
-    rg('lbRows', 'Leaderboard rows', 1, 5), rg('feedLines', 'Feed lines', 1, 8), tg('feedAvatars', 'Profile pictures in feed'),
-    rg('popupSecs', 'Winner window duration', 3, 30, 1, 's'),
-    rg('z1', 'Header height', 16, 30, 1, '%'), rg('z2', 'Puzzle height', 20, 45, 1, '%'), rg('z4', 'Footer height', 8, 25, 1, '%'),
+    tg('showFeed', 'Show guess window (profile pictures + guesses, under the category)'), tg('showPopup', 'Show winner window in the centre'), tg('showLb', 'Show mini leaderboard (bottom)'), tg('showFooter', 'Show footer'),
+    rg('feedLines', 'Guess window lines', 1, 6), rg('lbRows', 'Mini leaderboard rows', 1, 8),
+    rg('z1', 'Header height', 12, 30, 1, '%'), rg('zg', 'Guess window height', 8, 30, 1, '%'), rg('z2', 'Puzzle height', 20, 45, 1, '%'), rg('z4', 'Footer height', 8, 25, 1, '%'),
     tg('sound', 'Sound effects'), rg('volume', 'Volume', 0, 100, 5, '%')],
   game: [
-    rg('roundSeconds', 'Round time', 20, 300, 5, 's'), rg('revealSeconds', 'Reveal time', 3, 30, 1, 's'), tg('showAnswer', 'Show the answer at the end of each round'),
+    rg('roundSeconds', 'Round time', 20, 300, 5, 's'),
+    tg('showAnswerWin', '✅ Show the answer when a viewer guesses it correctly'), rg('popupSecs', 'Winner window duration (centre)', 2, 30, 1, 's'),
+    tg('showLbOverlay', 'Show full leaderboard after the winner window'), rg('lbSecs', 'Full leaderboard duration', 3, 60, 1, 's'),
+    tg('showAnswer', '⌛ Show the answer when time runs out (nobody solved it)'), rg('revealSeconds', 'Reveal time when nobody solved it', 3, 30, 1, 's'),
     rg('minLetters', 'Min letters', 3, 25), rg('maxLetters', 'Max letters', 3, 25), tg('allowMulti', 'Allow multi-word puzzles'),
     tg('spaceless', 'Accept answer without spaces'), tg('hints', 'Auto hints (reveal letters)'), rg('hintStart', 'First hint at', 10, 90, 5, '% of round'),
     rg('hintEvery', 'Next hint every', 3, 60, 1, 's'), rg('maxHints', 'Max hints', 0, 10),
@@ -70,12 +72,38 @@ function rowTile(lens, W, H) {
   return Math.max(4, Math.floor(Math.min((W * 0.96) / units, H * 0.78, 90)));
 }
 
+// Exact TikTok profile picture, always a circle. Try the server proxy first, then the direct URL, then a letter bubble.
+const proxied = u => '/avatar?u=' + encodeURIComponent(u);
 function Avatar({ pic, name, size }) {
-  const [bad, setBad] = useState(false);
-  useEffect(() => setBad(false), [pic]);
-  return pic && !bad
-    ? <img className="av" style={{ '--s': size }} src={pic} alt="" referrerPolicy="no-referrer" onError={() => setBad(true)} />
-    : <span className="av ph" style={{ '--s': size }}>{(name || '?')[0].toUpperCase()}</span>;
+  const [stage, setStage] = useState(0);
+  useEffect(() => setStage(0), [pic]);
+  const st = { '--s': size };
+  return !pic || stage > 1
+    ? <span className="av ph" style={st}>{[...(name || '?')][0].toUpperCase()}</span>
+    : <img className="av" style={st} src={stage === 0 ? proxied(pic) : pic} alt="" referrerPolicy="no-referrer" onError={() => setStage(x => x + 1)} />;
+}
+
+// Full leaderboard (everyone with points). Rows shrink to fit; with a very long list it scrolls slowly during the display time.
+function FullBoard({ rows, secs, winner }) {
+  const AV = 100, n = rows.length;
+  const pitch = n * 10 <= AV ? 10 : Math.max(6.4, AV / n), rh = pitch - 1, total = n * pitch, over = Math.max(0, total - AV);
+  return (
+    <div className="fb">
+      <h2>🏆 Leaderboard</h2>
+      <div className="fbwin" style={{ height: Math.min(total, AV) + 'cqw' }}>
+        <div className={'fblist' + (over > 0 ? ' scroll' : '')} style={{ '--rh': rh, '--d': over + 'cqw', '--secs': Math.max(2, secs - 1) + 's' }}>
+          {rows.map((p, i) => (
+            <div className={'fbrow' + (p.user === winner ? ' new' : '')} key={p.user}>
+              <span className="rk">{i < 3 ? MEDALS[i] : i + 1}</span>
+              <Avatar pic={p.pic} name={p.user} size="calc(var(--rh)*1cqw)" />
+              <div className="who"><b>@{p.user}</b>{rh >= 8 && p.words.length > 0 && <em>{p.words[0]}</em>}</div>
+              <span className="pts">{p.score}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function Board({ text, solved, scale }) {
@@ -138,7 +166,7 @@ export default function App() {
   useEffect(() => { try { localStorage.setItem('ul-settings', JSON.stringify(L)); } catch { /* ignore */ } }, [L]);
 
   const [s, setS] = useState(null), [cfg, setCfg] = useState(null), [cats, setCats] = useState([]), [pinReq, setPinReq] = useState(false);
-  const [feed, setFeed] = useState([]), [left, setLeft] = useState(0), [popup, setPopup] = useState(null);
+  const [feed, setFeed] = useState([]), [left, setLeft] = useState(0);
   const [menu, setMenu] = useState(false), [mmenu, setMmenu] = useState(false), [panel, setPanel] = useState(null);
   const [pm, setPm] = useState('test'), [tt, setTt] = useState({ status: 'off', user: '' }), [fb, setFb] = useState('');
   const [ttUser, setTtUser] = useState(''), [ttKey, setTtKey] = useState(''), [ttMsg, setTtMsg] = useState('');
@@ -158,15 +186,7 @@ export default function App() {
   paused.current = !!s?.paused;
   useEffect(() => { setTtUser(tt.user || ''); }, [tt.user]);
 
-  useEffect(() => {
-    if (s?.phase === 'reveal' && s.winnerInfo) {
-      setPopup(s.winnerInfo);
-      if (L.sound) beep(L.volume, [523, 659, 784, 1047]);
-      const t = setTimeout(() => setPopup(null), L.popupSecs * 1000);
-      return () => clearTimeout(t);
-    }
-    setPopup(null);
-  }, [s?.phase, s?.round]); // eslint-disable-line
+  useEffect(() => { if (s?.phase === 'reveal' && s.winnerInfo && L.sound) beep(L.volume, [523, 659, 784, 1047]); }, [s?.phase, s?.round]); // eslint-disable-line
 
   const theme = THEMES[L.theme] || THEMES.cotton;
   useEffect(() => { document.body.style.background = theme.v['--bg1']; }, [theme]);
@@ -224,20 +244,25 @@ export default function App() {
     });
   };
   const setMode = m => { setMmenu(false); admin('mode', { mode: m }); flash(MODES[m][0] + ' ' + MODES[m][2] + ' - fresh round'); };
-  const toggleAnswer = () => {   // quick switch: takes effect at the end of the current round
-    const v = !cfg?.showAnswer; setCfg(c => ({ ...c, showAnswer: v })); setDraft(d => (d?.cfg ? { ...d, cfg: { ...d.cfg, showAnswer: v } } : d));
-    admin('set', { patch: { showAnswer: v } }); flash(v ? '👁️ Answer will be shown' : '🙈 Answer will be hidden');
+  const toggleAnswer = () => {   // quick switch for "show the answer when guessed correctly": takes effect at the end of the current round
+    const v = !cfg?.showAnswerWin; setCfg(c => ({ ...c, showAnswerWin: v })); setDraft(d => (d?.cfg ? { ...d, cfg: { ...d.cfg, showAnswerWin: v } } : d));
+    admin('set', { patch: { showAnswerWin: v } }); flash(v ? '👁️ Correct answer will be shown' : '🙈 Correct answer will be hidden');
   };
   const fullscreen = () => { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.(); };
 
   if (!s) return <div className="stage" style={theme.v}><p className="wait">Connecting…</p></div>;
   const reveal = s.phase === 'reveal';
-  const z1 = L.z1, z4 = L.z4, z2 = Math.min(L.z2, 70 - z1 - z4), z3 = 100 - z1 - z2 - z4;
-  const maxRows = Math.max(1, Math.floor((z3 * 1.778 - 14 - 3 - 13) / 10.5));   // slot 14 + gaps 3 + at least 2 feed lines
+  // grid zones (% of the space under the toolbar): header | guess window | puzzle | mini leaderboard | footer
+  const z1 = L.z1, z4 = L.z4, zg = L.showFeed ? L.zg : 0, z2 = Math.min(L.z2, 86 - z1 - zg - z4), z3 = 100 - z1 - zg - z2 - z4;
+  const CQ = 1.6578;   // stage height under the toolbar in cqw per 1%
+  const gwH = zg * CQ - 2, nLines = Math.max(1, Math.min(L.feedLines, Math.floor((gwH - 2.4 + 1) / 7))), gh = Math.min(11, Math.max(4, (gwH - 2.4 - (nLines - 1)) / nLines));
+  const maxRows = Math.max(1, Math.floor((z3 * CQ - 3) / 10));
   const nRows = Math.min(L.lbRows, maxRows);
-  const style = { ...theme.v, '--fs': L.fontScale / 100, '--ff': FONTS[L.font][1], '--tr': RADIUS[L.tileShape], gridTemplateRows: `auto minmax(0,${z1}fr) minmax(0,${z2}fr) minmax(0,${z3}fr) minmax(0,${z4}fr)` };
+  const style = { ...theme.v, '--fs': L.fontScale / 100, '--ff': FONTS[L.font][1], '--tr': RADIUS[L.tileShape], gridTemplateRows: `auto minmax(0,${z1}fr) minmax(0,${zg}fr) minmax(0,${z2}fr) minmax(0,${z3}fr) minmax(0,${z4}fr)` };
   const hid = on => (on ? '' : ' hid');
   const rows = s.leaderboard.slice(0, nRows);   // only real winners - no empty placeholder rows
+  const won = reveal && s.winnerInfo;
+  const stage = won ? (s.lbSecs > 0 && s.full?.length && left <= s.lbSecs ? 'lb' : 'pop') : null;   // winner window first, full leaderboard for the last lbSecs
 
   return (
     <div className={'stage' + (L.reduceMotion ? ' calm' : '')} style={style}>
@@ -266,7 +291,7 @@ export default function App() {
         <button onClick={() => admin('skip')} title="Skip / next round">⏭️</button>
         <button className={cfg?.mode === 'specific' ? 'hot' : ''} onClick={() => (panel === 'cats' ? closePanel() : openPanel('cats'))} title="Categories">🗂️</button>
         <button onClick={() => admin('hint')} title="Give a hint now">💡</button>
-        <button className={cfg && !cfg.showAnswer ? 'hot' : ''} onClick={toggleAnswer} title={cfg?.showAnswer ? 'Answer is shown at round end (tap to hide)' : 'Answer is hidden at round end (tap to show)'}>{cfg && !cfg.showAnswer ? '🙈' : '👁️'}</button>
+        <button className={cfg && !cfg.showAnswerWin ? 'hot' : ''} onClick={toggleAnswer} title={cfg?.showAnswerWin ? 'Correct answer is shown when guessed (tap to hide)' : 'Correct answer is hidden when guessed (tap to show)'}>{cfg && !cfg.showAnswerWin ? '🙈' : '👁️'}</button>
         <button onClick={() => admin('time')} title="Add 15 seconds">⏰</button>
         <button className={L.sound ? 'hot' : ''} onClick={() => setLocal('sound', !L.sound)} title="Sound on/off">{L.sound ? '🔔' : '🔕'}</button>
         <button onClick={fullscreen} title="Full screen">⛶</button>
@@ -278,6 +303,18 @@ export default function App() {
         <h1 className={hid(L.showTitle)}>{L.title}</h1>
         <CatBanner text={s.category} on={L.showCategory} dep={L.fontScale + L.font} />
       </header>
+
+      {/* GUESS WINDOW - its own grid row directly under the category, so it can never cover the puzzle letters */}
+      <section className="z zg" style={{ '--gh': gh + 'cqw' }}>
+        <div className={'gwin' + hid(L.showFeed && feed.length > 0)}>
+          {feed.slice(-nLines).map(m => (
+            <div key={m.id} className={'gmsg' + (m.ok ? ' ok' : '')}>
+              <Avatar pic={m.pic} name={m.user} size="var(--gh)" />
+              <span className="gtx"><b>@{m.user}</b> {m.text}</span>
+            </div>
+          ))}
+        </div>
+      </section>
 
       {/* ZONE 2 - puzzle board */}
       <section className="z z2">
@@ -291,17 +328,8 @@ export default function App() {
         </div>
       </section>
 
-      {/* ZONE 3 - floating winner window (reserved slot), leaderboard, feed */}
+      {/* ZONE 3 - mini leaderboard */}
       <section className="z z3">
-        <div className="slot">
-          {L.showPopup && popup && (
-            <div className="pop" key={s.round}>
-              <Avatar pic={popup.pic} name={popup.user} size="11cqw" />
-              <div className="txt"><b>@{popup.user}</b><FitText as="span" className="wd" dep={popup.word}>{popup.word || '🎉 Correct!'}</FitText></div>
-              <div className="pt">+{popup.pts}</div>
-            </div>
-          )}
-        </div>
         <div className={'lb' + hid(L.showLb)}>
           {rows.map((p, i) => (
             <div className="lbrow" key={p.user}>
@@ -309,13 +337,6 @@ export default function App() {
               <Avatar pic={p.pic} name={p.user} size="7cqw" />
               <div className="who"><b>@{p.user}</b><FitText as="em" dep={p.words.join()}>{p.words.slice(-3).join(' · ')}</FitText></div>
               <span className="pts">{p.score}</span>
-            </div>
-          ))}
-        </div>
-        <div className={'feed' + hid(L.showFeed)}>
-          {feed.slice(-L.feedLines).map(m => (
-            <div key={m.id} className={'msg' + (m.ok ? ' ok' : '')}>
-              {L.feedAvatars && <Avatar pic={m.pic} name={m.user} size="5cqw" />}<span><b>@{m.user}</b> {m.text}</span>
             </div>
           ))}
         </div>
@@ -335,6 +356,21 @@ export default function App() {
         )}
         {pm === 'test' && s.peek && !reveal && <small className="peek">🔎 Answer: {s.peek}</small>}
       </footer>
+
+      {/* CENTRE OVERLAY: winner window (pic + correct answer), then the full leaderboard */}
+      {stage === 'pop' && L.showPopup && (
+        <div className="ov" key={'p' + s.round}>
+          <div className="pop">
+            <Avatar pic={s.winnerInfo.pic} name={s.winnerInfo.user} size="30cqw" />
+            <b className="pn">@{s.winnerInfo.user}</b>
+            <FitText className="wd" dep={s.winnerInfo.word}>{s.winnerInfo.word || '🎉 Correct!'}</FitText>
+            <div className="pt">+{s.winnerInfo.pts}</div>
+          </div>
+        </div>
+      )}
+      {stage === 'lb' && (
+        <div className="ov lbv" key={'l' + s.round}><FullBoard rows={s.full} secs={s.lbSecs} winner={s.winner} /></div>
+      )}
 
       {toast && <div className="toast">{toast}</div>}
 

@@ -3,11 +3,10 @@
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
-    "build": "npm install && cd client && npm install && npm run build",
-    "start": "node server.js",
-    "gen-db": "node generate_db.js"
+    "postinstall": "cd client && npm install && npm run build",
+    "start": "node server.js"
   },
-  "engines": { "node": ">=18" },
+  "engines": { "node": "20.x" },
   "dependencies": {
     "express": "^4.19.2",
     "socket.io": "^4.7.5",

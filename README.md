@@ -2,7 +2,7 @@
 One-folder monorepo: Express + Socket.IO + tiktok-live-connector backend, Vite/React 9:16 frontend.
 
 ## Deploy (Render.com -> New Web Service -> connect the GitHub repo)
-- Build Command: `npm run build`
+- Build Command: `npm install` (its postinstall step builds the React client)
 - Start Command: `npm start`
 - Env vars: `TIKTOK_USERNAME` (no @), `TIKTOK_SIGN_API_KEY` (eulerstream.com), optional `ROUND_SECONDS` (default 90)
 
@@ -12,7 +12,7 @@ One-folder monorepo: Express + Socket.IO + tiktok-live-connector backend, Vite/R
 3. Rounds run forever: 90s round (or first correct guess) -> 10s reveal -> next.
 
 ## Local test (no TikTok)
-`TEST_MODE=1 node server.js` (after `npm run build`) and open `http://localhost:3000/?test=1`.
+`TEST_MODE=1 node server.js` (after `npm install`) and open `http://localhost:3000/?test=1`.
 
 ## Big database
 `node generate_db.js` -> creates `data/puzzles.full.json` (auto-loaded). Extend SOURCES or add `data/custom/<CATEGORY>.txt`.

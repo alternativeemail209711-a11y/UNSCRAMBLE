@@ -54,20 +54,13 @@ function beep(vol, notes) {
   } catch { /* audio not available */ }
 }
 
-// Largest tile size (px) so every word fits in W x H; words wrap as whole words, and inside a word only if it alone is wider than the board.
+// ONE ROW ONLY: largest tile size (px) so every word sits on a single line, with a clear gap between words.
+// Row width = letters*s + in-word gaps (.12s) + word gaps (.9s). Height limit keeps tiles inside the board.
+const WORD_GAP = 0.9, TILE_GAP = 0.12;
 function fitTile(lens, W, H) {
-  W *= 0.96;
-  for (let s = 80; s >= 12; s--) {
-    const cell = s * 1.12, gap = s * 0.45, per = Math.max(1, Math.floor(W / cell));
-    let lines = 1, x = 0;
-    for (const n of lens) {
-      const w = n * cell;
-      if (w > W) { if (x > 0) lines++; lines += Math.ceil(n / per) - 1; x = W; continue; }
-      if (x === 0) x = w; else if (x + gap + w <= W) x += gap + w; else { lines++; x = w; }
-    }
-    if (lines * cell + (lines - 1) * gap <= H * 0.96) return s;
-  }
-  return 12;
+  const L = lens.reduce((a, n) => a + n, 0), nw = lens.length;
+  const units = L + TILE_GAP * (L - nw) + WORD_GAP * (nw - 1);
+  return Math.max(8, Math.min(80, Math.floor((W * 0.98) / units), Math.floor(H * 0.96)));
 }
 
 function Avatar({ pic, name, size }) {
@@ -86,8 +79,8 @@ function Board({ text, solved, scale, wave }) {
     ro.observe(ref.current);
     return () => ro.disconnect();
   }, []);
-  const words = text.split(' ');
-  const t = Math.max(12, Math.round(fitTile(words.map(w => w.length), box.w, box.h) * scale / 100));
+  const words = text.split(' ').filter(Boolean);
+  const t = Math.max(8, Math.round(fitTile(words.map(w => w.length), box.w, box.h) * scale / 100));
   return (
     <div className={'board' + (wave ? ' wave' : '')} ref={ref} style={{ '--t': t + 'px' }}>
       <div className="words" key={text}>
@@ -289,7 +282,7 @@ export default function App() {
       {/* ZONE 2 - puzzle board */}
       <section className="z z2">
         <Board text={reveal ? s.answer : s.scrambled} solved={reveal} scale={L.tileScale} wave={cel === 1} />
-        <div className={'hint' + hid(L.showHint && !reveal && !!s.hint)}>{s.hint ? [...s.hint].map(c => (c === ' ' ? '\u00a0' : c === '_' ? '•' : c)).join(' ') : '\u00a0'}</div>
+        <div className={'hint' + hid(L.showHint && !reveal && !!s.hint)} style={{ fontSize: `calc(${Math.min(4.2, 88 / Math.max(1, (s.hint || '').length * 1.9))}cqw*var(--fs))` }}>{s.hint ? [...s.hint].map(c => (c === ' ' ? '\u00a0\u00a0\u00a0' : c === '_' ? '•' : c)).join(' ') : '\u00a0'}</div>
         <div className={'strip' + hid(L.showTimer)}>
           {!reveal && <i className="bar-fill" style={{ width: (left / s.total) * 100 + '%' }} />}
           <span className={reveal ? 'winner' : ''}>
@@ -349,7 +342,7 @@ export default function App() {
           <div className="crown">👑</div>
           <Avatar pic={winner.pic} name={winner.user} size="26cqw" />
           <div className="who1">@{winner.user}</div>
-          <div className="wordbig">{winner.word}</div>
+          <div className="wordbig" style={{ fontSize: `calc(${Math.min(5, 70 / Math.max(1, winner.word.length * 1.25))}cqw*var(--fs))` }}>{winner.word}</div>
           <div className="big">+<CountUp to={winner.pts} /></div>
           {winner.streak > 1 && <div className="streak">🔥 {winner.streak} wins in a row!</div>}
         </div>

@@ -428,7 +428,7 @@ io.on('connection', socket => {
 
 const dist = R('client/dist');
 app.get('/health', (_, res) => res.send('ok'));
-app.get('/api/status', (_, res) => res.json({ ok: true, mode: live.mode, status: live.status, phase: state.phase, round, players: { session: session.size, allTime: allTime.size }, words: { puzzle: POOL.length, accepted: WORDSET.size, meets450k: WORDSET.size >= 450000 } }));
+app.get('/api/status', (_, res) => res.json({ ok: true, mode: live.mode, status: live.status, phase: state.phase, round, players: { session: session.size, allTime: allTime.size }, words: { puzzle: POOL.length, accepted: WORDSET.size, target: 400000, meetsTarget: WORDSET.size >= 400000 } }));
 app.use(express.static(dist));
 app.use((_, res) => res.sendFile(path.join(dist, 'index.html')));
 

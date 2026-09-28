@@ -23,9 +23,9 @@ h1{flex:none;max-width:100%;font-size:calc(6.8cqw*var(--fs));line-height:1.1;fon
 /* ZONE 2: board / hint / timer */
 .z2{position:relative;padding-top:1cqw;gap:1cqw}
 .board{flex:1 1 0;min-height:0;width:100%;overflow:hidden}
-.words{height:100%;display:flex;flex-wrap:wrap;justify-content:center;align-content:center;gap:calc(var(--t)*.45)}
-.word{display:flex;flex-wrap:wrap;justify-content:center;gap:calc(var(--t)*.12);max-width:100%}
-.tile{width:var(--t);height:var(--t);display:grid;place-items:center;font-size:calc(var(--t)*.62);line-height:1;font-weight:800;color:var(--tt);background:linear-gradient(var(--t1),var(--t2));border:calc(var(--t)*.045) solid var(--te);border-radius:var(--tr);box-shadow:0 calc(var(--t)*.07) 0 var(--te);animation:pop .35s both}
+.words{height:100%;display:flex;flex-wrap:nowrap;justify-content:center;align-items:center;gap:calc(var(--t)*.9)}
+.word{flex:none;display:flex;flex-wrap:nowrap;justify-content:center;gap:calc(var(--t)*.12)}
+.tile{flex:none;width:var(--t);height:var(--t);display:grid;place-items:center;font-size:calc(var(--t)*.62);line-height:1;font-weight:800;color:var(--tt);background:linear-gradient(var(--t1),var(--t2));border:calc(var(--t)*.045) solid var(--te);border-radius:var(--tr);box-shadow:0 calc(var(--t)*.07) 0 var(--te);animation:pop .35s both}
 .tile.ok{color:#032b16;background:linear-gradient(#8dffb8,#19c46b);border-color:#0b7a40;box-shadow:0 calc(var(--t)*.07) 0 #0b7a40}
 .hint{flex:none;height:5cqw;line-height:5cqw;text-align:center;font:800 calc(4.2cqw*var(--fs)) ui-monospace,Consolas,monospace;letter-spacing:.6cqw;color:var(--gold);white-space:nowrap;overflow:hidden}
 .strip{position:relative;flex:none;height:9cqw;margin-bottom:1cqw;display:grid;place-items:center;border-radius:3cqw;overflow:hidden;background:var(--panel);border:1px solid var(--te);font-size:calc(4.2cqw*var(--fs));font-weight:800}
@@ -93,7 +93,7 @@ h1{flex:none;max-width:100%;font-size:calc(6.8cqw*var(--fs));line-height:1.1;fon
 .spot .crown{font-size:9cqw;line-height:1;animation:bob 1s ease-in-out infinite}
 .spot .av{border-width:1cqw;box-shadow:0 0 5cqw var(--gold)}
 .spot .who1{max-width:100%;font-size:calc(7cqw*var(--fs));font-weight:900;color:var(--link);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.spot .wordbig{max-width:100%;font-size:calc(5cqw*var(--fs));font-weight:900;letter-spacing:.5cqw;line-height:1.15;word-break:break-word}
+.spot .wordbig{max-width:100%;font-size:calc(5cqw*var(--fs));font-weight:900;letter-spacing:.5cqw;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:clip;word-spacing:1.2cqw}
 .spot .big{font-size:calc(17cqw*var(--fs));line-height:1;font-weight:900;color:var(--gold);text-shadow:0 .8cqw 0 #0005}
 .spot .streak{padding:.8cqw 3cqw;border-radius:99px;font-size:calc(4cqw*var(--fs));font-weight:900;background:var(--a1);color:var(--bt)}
 /* stage 3 (docked rank card + leaderboard highlight) */

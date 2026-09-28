@@ -3,6 +3,9 @@
 One-folder monorepo: **Express + Socket.IO + tiktok-live-connector** backend, **Vite/React 9:16** frontend.
 Guess the scrambled word in the TikTok chat - first correct comment wins.
 
+## Board layout
+The puzzle answer is always drawn on ONE row; multi-word answers get a clear gap between each word (tiles shrink to fit, never wrap).
+
 ## What's new in v2
 - **Live / Test / Offline modes** - switch any time from the 📡 button (toolbar) -> **📡 Live** tab.
   - 🔴 **Live** reads your TikTok chat.
@@ -48,12 +51,12 @@ npm start            # http://localhost:3000
 # client dev with hot reload: npm run dev (server) + npm run dev:client (Vite, proxies sockets)
 ```
 
-## English word bank
+## English word bank (target: 400,000+ accepted words)
 - **Puzzles** come from a curated, bundled list of **112,440 verified English words** (`data/words.txt`: common words + inflections, no proper nouns/acronyms) as the toggleable **ENGLISH WORDS** category.
 - **Guesses** are checked against a bigger *accepted* list: in that category **any real word that uses the same letters wins**, not only the target.
-- On deploy, `postinstall` runs `generate_words.js --soft`, which downloads the public dwyl / SOWPODS / ENABLE lists (when the host has internet) and merges them into `data/words.full.txt`, which is auto-loaded. It never breaks the build if a download fails. Re-run any time with `npm run words`.
-- Check the real number: Live tab -> Diagnostics ("Word bank: N accepted English words") or `/api/status` (`words.accepted`, `words.meets450k`).
-- Honest limit: open lists total roughly 350-400k distinct strictly-valid words after merging (Collins ~280k, dwyl ~370k), so 450,000 is likely *not* reachable without padding with non-words, proper nouns or phrases. The game reports the true count rather than hiding it.
+- On deploy, `postinstall` runs `generate_words.js --soft`. When the host has internet it downloads the public dwyl, SOWPODS/Collins and ENABLE lists plus the US/GB/AU/CA/ZA Hunspell dictionaries (expanded with built-in affix rules), merges them into `data/words.full.txt`, and the server auto-loads it. It never breaks the build if a download fails. Re-run any time with `npm run words`; change the goal with `WORD_TARGET`.
+- **Check the real number:** Live tab -> Diagnostics ("Word bank: N accepted English words") or `/api/status` (`words.accepted`, `words.meetsTarget`). The build log also prints `Target 400,000: REACHED / NOT reached`.
+- Honest note: the bundled file alone is 112k. The 400k figure depends on the deploy-time downloads succeeding and the merged open lists being large enough; the game reports the true count instead of hiding it.
 
 ## Big puzzle database
 `node generate_db.js` -> `data/puzzles.full.json` (auto-loaded when present).

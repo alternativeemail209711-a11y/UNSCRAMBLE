@@ -15,14 +15,14 @@ const RADIUS = { rounded: '18%', square: '6%', circle: '50%' };
 const DEFAULTS = { theme: 'aurora', font: 'system', fontScale: 100, tileShape: 'rounded', tileScale: 100, title: 'UNSCRAMBLE LIVE',
   footer: 'Type the correct word(s) in the chat to win!', reduceMotion: false, showTitle: true, showCategory: true, showTimer: true,
   showHint: true, showPopup: true, showLb: true, showFeed: true, showFooter: true, feedLines: 4, lbRows: 3, feedAvatars: true,
-  popupSecs: 8, z1: 18, z2: 28, z4: 12, autoHideBar: true, sound: false, volume: 60 };
+  popupSecs: 8, z1: 20, z2: 28, z4: 12, autoHideBar: true, sound: false, volume: 60 };
 const tg = (k, l) => ({ k, l, t: 'toggle' });
 const rg = (k, l, min, max, step = 1, u = '') => ({ k, l, t: 'range', min, max, step, u });
 const FIELDS = {
   look: [
     { k: 'theme', l: 'Theme', t: 'select', o: Object.entries(THEMES).map(([k, x]) => [k, x.icon + ' ' + x.name]) },
     { k: 'font', l: 'Font', t: 'select', o: Object.entries(FONTS).map(([k, x]) => [k, x[0]]) },
-    rg('fontScale', 'Text size', 70, 140, 5, '%'),
+    rg('fontScale', 'Text size', 80, 120, 5, '%'),
     { k: 'tileShape', l: 'Tile shape', t: 'select', o: [['rounded', 'Rounded'], ['square', 'Square'], ['circle', 'Circle']] },
     rg('tileScale', 'Max tile size', 60, 100, 5, '%'),
     { k: 'title', l: 'Title text', t: 'text' }, { k: 'footer', l: 'Footer text', t: 'text' },
@@ -32,7 +32,7 @@ const FIELDS = {
     tg('showPopup', 'Show winner floating window'), tg('showLb', 'Show leaderboard'), tg('showFeed', 'Show guess feed'), tg('showFooter', 'Show footer'),
     rg('lbRows', 'Leaderboard rows', 1, 5), rg('feedLines', 'Feed lines', 1, 8), tg('feedAvatars', 'Profile pictures in feed'),
     rg('popupSecs', 'Winner window duration', 3, 30, 1, 's'),
-    rg('z1', 'Header height', 10, 30, 1, '%'), rg('z2', 'Puzzle height', 20, 45, 1, '%'), rg('z4', 'Footer height', 8, 25, 1, '%'),
+    rg('z1', 'Header height', 16, 30, 1, '%'), rg('z2', 'Puzzle height', 20, 45, 1, '%'), rg('z4', 'Footer height', 8, 25, 1, '%'),
     tg('autoHideBar', 'Auto-hide toolbar'), tg('sound', 'Sound effects'), rg('volume', 'Volume', 0, 100, 5, '%')],
   game: [
     rg('roundSeconds', 'Round time', 20, 300, 5, 's'), rg('revealSeconds', 'Reveal time', 3, 30, 1, 's'),
@@ -153,22 +153,16 @@ export default function App() {
 
   if (!s) return <div className="stage" style={theme.v}><p className="wait">Connecting…</p></div>;
   const reveal = s.phase === 'reveal';
-  const z1 = L.z1, z4 = L.z4, z2 = Math.min(L.z2, 85 - z1 - z4);
-  const style = { ...theme.v, '--fs': L.fontScale / 100, '--ff': FONTS[L.font][1], '--tr': RADIUS[L.tileShape], gridTemplateRows: `${z1}% ${z2}% ${100 - z1 - z2 - z4}% ${z4}%` };
+  const z1 = L.z1, z4 = L.z4, z2 = Math.min(L.z2, 70 - z1 - z4), z3 = 100 - z1 - z2 - z4;
+  const maxRows = Math.max(1, Math.floor((z3 * 1.778 - 14 - 3 - 13) / 10.5));   // slot 14 + gaps 3 + at least 2 feed lines
+  const nRows = Math.min(L.lbRows, maxRows);
+  const style = { ...theme.v, '--fs': L.fontScale / 100, '--ff': FONTS[L.font][1], '--tr': RADIUS[L.tileShape], gridTemplateRows: `minmax(0,${z1}fr) minmax(0,${z2}fr) minmax(0,${z3}fr) minmax(0,${z4}fr)` };
   const hid = on => (on ? '' : ' hid');
-  const rows = Array.from({ length: L.lbRows }, (_, i) => s.leaderboard[i] || null);
+  const rows = Array.from({ length: nRows }, (_, i) => s.leaderboard[i] || null);
   const barOn = !L.autoHideBar || bar || menu || panel;
 
   return (
     <div className={'stage' + (L.reduceMotion ? ' calm' : '')} style={style} onPointerDown={poke}>
-      {/* TOOLBAR */}
-      <div className={'bar' + (barOn ? '' : ' off')}>
-        <button onClick={() => setMenu(m => !m)} aria-label="Theme">{theme.icon}</button>
-        <button onClick={() => admin('pause')} aria-label="Pause">{s.paused ? '▶️' : '⏸️'}</button>
-        <button onClick={() => admin('skip')} aria-label="Skip">⏭️</button>
-        <button onClick={fullscreen} aria-label="Full screen">⛶</button>
-        <button onClick={() => setPanel(p => (p ? null : 'look'))} aria-label="Settings">⚙️</button>
-      </div>
       {menu && (
         <div className="menu">
           {Object.entries(THEMES).map(([k, x]) => (
@@ -179,8 +173,15 @@ export default function App() {
 
       {/* ZONE 1 - header + category */}
       <header className="z z1">
+      <div className={'bar' + (barOn ? '' : ' off')}>
+        <button onClick={() => setMenu(m => !m)} aria-label="Theme">{theme.icon}</button>
+        <button onClick={() => admin('pause')} aria-label="Pause">{s.paused ? '▶️' : '⏸️'}</button>
+        <button onClick={() => admin('skip')} aria-label="Skip">⏭️</button>
+        <button onClick={fullscreen} aria-label="Full screen">⛶</button>
+        <button onClick={() => setPanel(p => (p ? null : 'look'))} aria-label="Settings">⚙️</button>
+      </div>
         <h1 className={hid(L.showTitle)}>{L.title}</h1>
-        <div className={'cat' + hid(L.showCategory)}>💡 CATEGORY: {s.category}</div>
+        <div className={'cat' + hid(L.showCategory)} style={s.category.length > 20 ? { fontSize: 'calc(4.2cqw*var(--fs))' } : undefined}>💡 CATEGORY: {s.category}</div>
       </header>
 
       {/* ZONE 2 - puzzle board */}

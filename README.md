@@ -1,5 +1,5 @@
 # WORD SHUFFLE - Knitting Edition 🧶
-Look & feel matches the platform's yarn theme: knitted-fabric background, yarn-ball buttons, stitched borders, multicolour yarn letter boxes, six wool themes + Night Wool (dark). Theme colours live in `client/src/themes.js`, the stitch/yarn styling is the "KNITTING LAYER" at the end of `client/src/styles.css`. New puzzle category: KNITTING & YARN (`data/puzzles.extra.json`).
+Look & feel matches the platform's yarn theme: knitted-fabric background, yarn-ball buttons, stitched borders, multicolour yarn letter boxes, seven knitted-background themes (`knit_...`) plus all 19 original themes with a plain background (`plain: true` in `themes.js`). Theme colours live in `client/src/themes.js`, the stitch/yarn styling is the "KNITTING LAYER" at the end of `client/src/styles.css`. New puzzle category: KNITTING & YARN (`data/puzzles.extra.json`).
 
 # Word Shuffle 🍬
 One-folder monorepo: Express + Socket.IO + tiktok-live-connector backend, Vite/React 9:16 frontend.

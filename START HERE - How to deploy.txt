@@ -12,8 +12,16 @@ The whole game now wears the same knitting look as your platform:
  - Timer bar looks like twisted yarn
  - Stitched (dashed) borders on the leaderboard, chat, winner window, menus
    and settings screens
- - Same 6 wool themes as your platform + a dark "Night Wool" theme
-   (tap the theme button on the top bar to switch)
+ - THEMES (tap the theme button on the top bar to switch). The list has
+   two groups:
+     1) 🧶 KNITTED BACKGROUND - the 6 wool themes from your platform
+        (Cream, Sky Blue, Meadow, Blossom, Lavender, Honey) + Night Wool (dark)
+     2) 🎨 PLAIN BACKGROUND - ALL your previous themes (Cotton Candy, Peach
+        Bunny, Minty Fresh, Dark, Light, Cream, Sky Blue, Meadow Green,
+        Blossom Pink, Lavender Violet, Honey Gold, Bubblegum, Candy Pink,
+        Aurora, Sunset, Ocean, Midnight, Neon Arcade, Coffee).
+        Same colours as before, with the knitting buttons, stitched borders
+        and yarn letter boxes, but a smooth plain colour background.
  - New puzzle category: KNITTING & YARN
  - Yarn-ball icon on the browser tab
 
@@ -50,8 +58,8 @@ HOW TO DEPLOY (same way as before)
 IF YOU STILL SEE THE OLD LOOK
 -----------------------------
  - Refresh the page (pull down), or close and reopen the browser tab.
- - The first time it opens, the game automatically clears the OLD colours
-   saved on your phone, so the knitting look shows up. Your other settings
+ - The first time it opens, the game clears the OLD custom colours
+   saved on your phone, so the knitting look shows up. Your chosen theme is kept. Your other settings
    (round time, title text, toolbar buttons, etc.) are kept.
 
 OPTIONAL LOOK SETTINGS

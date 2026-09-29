@@ -288,3 +288,9 @@ h1,.bar .brand .bi{text-shadow:0 .4cqw 0 #fff,0 .9cqw 0 rgba(139,90,52,.18)}
 .tilepv{border:2px dashed var(--te)}
 .fld select,.fld input[type=text],.fld input[type=password],textarea{border:2px dashed var(--te)}
 .fld select:focus,.fld input:focus,textarea:focus{border-style:solid;outline:none}
+
+/* ORIGINAL THEMES: keep every knitting detail (yarn buttons, stitched borders, yarn boxes) but with a PLAIN smooth background */
+html.plainBg{background-image:linear-gradient(160deg,var(--bg1),var(--bg2));background-size:100% 100%;background-attachment:fixed}
+.stage.plain::before{display:none}
+.menu .mh{margin:1.5cqw 2cqw .5cqw;font-size:3cqw;font-weight:800;opacity:.75;letter-spacing:.04em}
+.menu .mh:first-child{margin-top:.5cqw}

@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
-import { THEMES, DEFAULT_THEME } from './themes.js';
+import { THEMES, DEFAULT_THEME, KNIT_RENAME } from './themes.js';
 import './styles.css';
 
 const socket = io();
@@ -49,20 +49,24 @@ const MODES = {
 const TT_TEXT = { off: '', nouser: '⚠️ No TikTok username yet - open ⚙️ → 🔴 Live and type it in', connecting: '⏳ Connecting to TikTok…', connected: '✅ Connected to TikTok chat', retrying: '⏳ Not live yet - retrying every 15s' };
 // One-time upgrade: older saved layouts (3 leaderboard rows, old zone heights, 'UNSCRAMBLE LIVE') are replaced by the new layout.
 const LAYOUT_V = '4', OLD_KEYS = ['z1', 'zg', 'z2', 'z4', 'lbRows', 'feedLines'];
-const KNIT_KEYS = ['theme', 'titleFont', 'tOk1', 'tOk2', 'tBg1', 'tBg2', 'tEdge', 'tTxt', 'cBg1', 'cBg2', 'cA1', 'cA2', 'cTxt', 'cTitle', 'lTitle'];   // old colours/fonts are dropped once, so the knitting look shows up
+const KNIT_KEYS = ['titleFont', 'tOk1', 'tOk2', 'tBg1', 'tBg2', 'tEdge', 'tTxt', 'cBg1', 'cBg2', 'cA1', 'cA2', 'cTxt', 'cTitle', 'lTitle'];   // old colours/fonts are dropped once, so the knitting look shows up
 const cleanOld = o => { const c = { ...o }; OLD_KEYS.forEach(k => delete c[k]); if (c.title === 'UNSCRAMBLE LIVE') delete c.title; return c; };
 const readSaved = key => {
   let o = {}; try { o = JSON.parse(localStorage.getItem(key) || '{}'); } catch { o = {}; }
   try { if (localStorage.getItem('ul-layout-v') !== LAYOUT_V) o = cleanOld(o); } catch { /* ignore */ }
   try { if (localStorage.getItem('ul-title-v') !== '1' && (o.title === 'UNSCRAMBLE' || o.title === 'UNSCRAMBLE LIVE')) { o = { ...o }; delete o.title; } } catch { /* ignore */ }
-  try { if (localStorage.getItem('ws-knit-v') !== '1') { o = { ...o }; KNIT_KEYS.forEach(k => delete o[k]); } } catch { /* ignore */ }
+  try {
+    const kv = localStorage.getItem('ws-knit-v');
+    if (!kv) { o = { ...o }; KNIT_KEYS.forEach(k => delete o[k]); }                       // first time: old colours/fonts are dropped so the knitting look shows
+    else if (kv === '1' && KNIT_RENAME[o.theme]) o = { ...o, theme: KNIT_RENAME[o.theme] };   // 2nd version: wool themes were renamed knit_...
+  } catch { /* ignore */ }
   return o;
 };
 const markMigrated = () => {
   try {
     if (localStorage.getItem('ul-layout-v') !== LAYOUT_V) { localStorage.setItem('ul-defaults', JSON.stringify(readSaved('ul-defaults'))); localStorage.setItem('ul-settings', JSON.stringify(readSaved('ul-settings'))); localStorage.setItem('ul-layout-v', LAYOUT_V); }
     if (localStorage.getItem('ul-title-v') !== '1') { localStorage.setItem('ul-defaults', JSON.stringify(readSaved('ul-defaults'))); localStorage.setItem('ul-settings', JSON.stringify(readSaved('ul-settings'))); localStorage.setItem('ul-title-v', '1'); }
-    if (localStorage.getItem('ws-knit-v') !== '1') { localStorage.setItem('ul-defaults', JSON.stringify(readSaved('ul-defaults'))); localStorage.setItem('ul-settings', JSON.stringify(readSaved('ul-settings'))); localStorage.setItem('ws-knit-v', '1'); }
+    if (localStorage.getItem('ws-knit-v') !== '2') { localStorage.setItem('ul-defaults', JSON.stringify(readSaved('ul-defaults'))); localStorage.setItem('ul-settings', JSON.stringify(readSaved('ul-settings'))); localStorage.setItem('ws-knit-v', '2'); }
   } catch { /* ignore */ }
 };
 const loadDefaults = () => ({ ...DEFAULTS, ...readSaved('ul-defaults') });
@@ -372,6 +376,7 @@ export default function App() {
   useEffect(() => {
     const r = document.documentElement, b1 = L.cBg1 || theme.v['--bg1'], b2 = L.cBg2 || theme.v['--bg2'];
     r.style.setProperty('--bg1', b1); r.style.setProperty('--bg2', b2); document.body.style.background = '';
+    r.classList.toggle('plainBg', !!theme.plain);   // original themes = plain colour background (no stitched fabric)
     let m = document.querySelector('meta[name="theme-color"]'); if (!m) { m = document.createElement('meta'); m.name = 'theme-color'; document.head.appendChild(m); }
     m.content = b1;
   }, [theme, L.cBg1, L.cBg2]);
@@ -496,7 +501,7 @@ export default function App() {
   const stage = won ? (s.lbSecs > 0 && s.full?.length && left <= s.lbSecs ? 'lb' : 'pop') : null;   // winner window first, full leaderboard for the last lbSecs
 
   return (
-    <div className={'stage' + (L.reduceMotion ? ' calm' : '') + (L.tShadow === false ? ' nosh' : '') + (L.tBob === false ? ' nobob' : '') + (yarnOn(L) ? ' yarnTiles' : '')} style={style}>
+    <div className={'stage' + (L.reduceMotion ? ' calm' : '') + (L.tShadow === false ? ' nosh' : '') + (L.tBob === false ? ' nobob' : '') + (yarnOn(L) ? ' yarnTiles' : '') + (theme.plain ? ' plain' : '')} style={style}>
       {mmenu && (
         <div className="menu wide">
           {Object.entries(MODES).map(([k, x]) => (
@@ -508,8 +513,11 @@ export default function App() {
       )}
       {menu && (
         <div className="menu">
-          {Object.entries(THEMES).map(([k, x]) => (
-            <button key={k} className={k === L.theme ? 'on' : ''} onClick={() => { setLocal('theme', k); setMenu(false); }}><span>{x.icon}</span>{x.name}</button>
+          {Object.entries(THEMES).map(([k, x], i, a) => (
+            <Fragment key={k}>
+              {(i === 0 || !!x.plain !== !!a[i - 1][1].plain) && <p className="mh">{x.plain ? '🎨 Plain background' : '🧶 Knitted background'}</p>}
+              <button className={k === L.theme ? 'on' : ''} onClick={() => { setLocal('theme', k); setMenu(false); }}><span>{x.icon}</span>{x.name}</button>
+            </Fragment>
           ))}
         </div>
       )}

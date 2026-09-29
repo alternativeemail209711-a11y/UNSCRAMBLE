@@ -1,9 +1,9 @@
 *{box-sizing:border-box;margin:0}
-html,body,#root{height:100%}
-body{display:flex;justify-content:center;align-items:center;overflow:hidden;background:#000}
-#root{display:flex;justify-content:center;align-items:center}
+html,body{width:100%;height:100%;height:var(--app-h,100dvh);overflow:hidden;overscroll-behavior:none;background:#000;-webkit-text-size-adjust:100%}
+body{position:fixed;inset:0;display:flex;justify-content:center;align-items:center;padding:env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0)}
+#root{width:100%;height:100%;display:flex;justify-content:center;align-items:center;overflow:hidden}
 /* Fixed 9:16 stage. Four grid zones; every zone clips its own content, so nothing can spill into a neighbour. */
-.stage{position:relative;width:min(100vw,calc(100dvh*9/16));height:min(100dvh,calc(100vw*16/9));container-type:size;display:grid;overflow:hidden;
+.stage{position:relative;flex:none;width:min(var(--sw,100vw),calc(var(--sh,100dvh)*9/16));height:min(var(--sh,100dvh),calc(var(--sw,100vw)*16/9));max-width:100%;max-height:100%;container-type:size;display:grid;overflow:hidden;
   color:var(--text);font-family:var(--ff,system-ui);font-variant-numeric:tabular-nums;background:radial-gradient(circle at 12% 18%,#fff8 0 1.2cqw,#0000 1.3cqw),radial-gradient(circle at 85% 30%,#fff7 0 1.6cqw,#0000 1.7cqw),radial-gradient(circle at 20% 72%,#fff7 0 1cqw,#0000 1.1cqw),radial-gradient(circle at 90% 85%,#fff8 0 1.4cqw,#0000 1.5cqw),linear-gradient(160deg,var(--bg1),var(--bg2))}
 .wait{margin:auto;font-size:6cqw}
 .z{min-width:0;min-height:0;overflow:hidden;padding:0 4cqw;display:flex;flex-direction:column}
@@ -21,7 +21,7 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden;back
 h1{flex:none;max-width:100%;font-size:calc(7.4cqw*var(--fs));line-height:1.15;font-weight:800;letter-spacing:.5cqw;text-align:center;text-shadow:0 .5cqw 0 var(--panel),0 1cqw 2cqw #0002;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cat{flex:none;max-width:100%;padding:1.6cqw 4cqw;border:.7cqw solid #fff9;border-radius:99px;font-size:calc(5.4cqw*var(--fs));line-height:1.15;font-weight:800;text-align:center;white-space:nowrap;overflow:hidden;color:var(--bt);background:linear-gradient(90deg,var(--a1),var(--a2));box-shadow:0 1cqw 0 #0002,0 1.5cqw 3cqw #0003;animation:bounce 2.6s ease-in-out infinite}
 /* theme dropdown (the only intentional overlay, opens on demand) */
-.menu{position:absolute;z-index:25;top:calc(var(--barH,12)*1cqw + 1cqw);left:50%;transform:translateX(-50%);width:60cqw;max-height:80cqw;overflow:auto;padding:1cqw;border-radius:3cqw;background:var(--bg1);border:1px solid var(--te);box-shadow:0 2cqw 6cqw #0007}
+.menu{position:absolute;z-index:25;top:calc(var(--barH,12)*1cqw + 1cqw);left:50%;transform:translateX(-50%);width:min(60cqw,92cqw);max-height:min(80cqw,calc(100cqh - var(--barH,12)*1cqw - 4cqw));overflow:auto;padding:1cqw;border-radius:3cqw;background:var(--bg1);border:1px solid var(--te);box-shadow:0 2cqw 6cqw #0007}
 .menu button{display:flex;align-items:center;gap:2.5cqw;width:100%;padding:2cqw;border:0;border-radius:2cqw;background:none;color:var(--text);font:inherit;font-size:4cqw;text-align:left;cursor:pointer}
 .menu button.on{background:var(--panel);font-weight:800}
 /* ZONE 2: board / hint / timer */
@@ -77,7 +77,7 @@ h1{flex:none;max-width:100%;font-size:calc(7.4cqw*var(--fs));line-height:1.15;fo
 .menu button small{font-size:2.8cqw;font-weight:500;opacity:.8;white-space:normal}
 .menu .note{font-size:2.9cqw;margin:1.5cqw 2cqw}
 /* settings panel */
-.panel{position:absolute;inset:calc(var(--barH,12)*1cqw) 0 0 0;z-index:20;overflow:auto;padding:12px;font-size:15px;background:linear-gradient(160deg,var(--bg1),var(--bg2))}
+.panel{overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;position:absolute;inset:calc(var(--barH,12)*1cqw) 0 0 0;z-index:20;overflow:auto;padding:12px;font-size:15px;background:linear-gradient(160deg,var(--bg1),var(--bg2))}
 .tabs{top:-12px;display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;position:sticky;top:-12px;padding:8px 0;background:var(--bg1);z-index:1}
 .tabs button,.act{padding:8px 12px;border-radius:10px;border:1px solid var(--te);background:var(--panel);color:var(--text);font:inherit;cursor:pointer}
 .tabs button.on{background:var(--a1);color:var(--bt);font-weight:800}

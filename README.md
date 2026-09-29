@@ -74,3 +74,7 @@ Categories whose name contains "english", "common words", "random words" or "dic
 
 ## Layout (default)
 Puzzle letters and the timer sit higher on the screen, giving the bottom leaderboard (top 5) and the chat/footer area more room. Every zone is its own grid row, so nothing overlaps. Older saved layout heights are replaced by the new ones automatically on first open.
+
+## Puzzle database & phone fit (update)
+- `data/puzzles.full.json` is built offline by `python3 tools/build_puzzles.py` (needs `pip install babel matplotlib`); add more seeds to that script and re-run. The server merges `puzzles.extra.json` on top automatically.
+- The 9:16 stage is now sized from the real visible viewport (`client/src/main.jsx`), so phone browser bars, notches, rotation and fullscreen no longer push the toolbar or bottom area off-screen.

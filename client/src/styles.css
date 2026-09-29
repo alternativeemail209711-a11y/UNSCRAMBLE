@@ -346,3 +346,25 @@ html.plainBg{background-image:linear-gradient(160deg,var(--bg1),var(--bg2));back
 .z3.stack .chrow .ctx b{color:var(--link);font-weight:800}
 .chrow.ok .ctx b{color:#fff}
 .z3.stack .chempty{margin:auto;font-size:3.6cqw}
+
+/* ===== HOST PERSONALISATION LAYER (banner / timer / hint / footer sizes + colours, waiting button, confetti) ===== */
+.cat{font-size:calc(5.4cqw*var(--fs)*var(--cats,1))}
+.hint{font-size:calc(4.6cqw*var(--fs)*var(--hs,1));color:var(--hintc,var(--gold))}
+.strip{font-size:calc(4.2cqw*var(--fs)*var(--tms,1))}
+.z4 p{font-size:calc(4.2cqw*var(--fs)*var(--fts,1));color:var(--footc,inherit)}
+/* timer warning: last seconds turn red (or your colour) and pulse */
+.strip.warn span{color:var(--warnc,#d6342c);animation:warnpulse .9s ease-in-out infinite}
+.strip.warn .bar-fill{background:var(--warnc,#d6342c)!important;opacity:.55}
+@keyframes warnpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+/* big start button (shown when auto next round is off / the game stopped by itself) */
+.nextbtn{flex:none;max-width:96%;padding:.9cqw 6cqw;border-radius:99px;border:.6cqw dashed #fffd;background:linear-gradient(90deg,var(--a1),var(--a2));color:var(--bt);font:800 calc(4.8cqw*var(--fs)) var(--ff);white-space:nowrap;cursor:pointer;box-shadow:inset 0 .4cqw 0 #fff5,0 1cqw 0 #0002,0 1.5cqw 3cqw #0002;animation:bounce 1.6s ease-in-out infinite}
+.nextbtn:active{transform:translateY(.6cqw)}
+/* confetti / falling emoji */
+.fx{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:18}
+.fxp{position:absolute;top:-10cqw;line-height:1;animation:fxfall linear both}
+.fx.loop .fxp{animation-iteration-count:infinite}
+@keyframes fxfall{from{transform:translate(0,0) rotate(0deg);opacity:1}85%{opacity:1}to{transform:translate(var(--dx,0),118cqh) rotate(var(--rot,360deg));opacity:0}}
+.calm .fxp{animation-duration:6s!important}
+/* settings tabs: ONE scrolling row (14 tabs would otherwise cover half of a phone screen) */
+.tabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin;padding-bottom:10px}
+.tabs button{flex:none;white-space:nowrap}

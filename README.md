@@ -1,3 +1,41 @@
+# WORD SHUFFLE 8 - what is new
+
+## ⏭ Auto next round (⚙️ -> ⏭ Next Round)
+Everything about how the game moves from one round to the next. Saved on the server, applied with **Save & Apply**.
+| Setting | What it does |
+|---|---|
+| Start the next round automatically | **Off** = after each round the game waits and shows a big **▶ START NEXT ROUND** button (or press ⏭ on the toolbar). |
+| Extra break before every next round | 0-60 s added after the winner window / leaderboard / reveal. The "NEXT ROUND IN N seconds" badge counts it down. |
+| Extra round time per letter | Long words get more time (round time + N x letters). |
+| Stop after N unsolved rounds in a row | If nobody guesses for N rounds the game stops by itself and waits for you (skipping with ⏭ never counts). |
+| Rounds per session + when it is over | e.g. 10 rounds. Then: stop and wait / start a new session (keep scores) / start a new session (reset scores). |
+| Final leaderboard | Shows the full leaderboard at the end of a session (0 = skip). |
+| Keep the same category for N rounds, category order | Random, or one after another in list order. |
+| Full leaderboard every N wins | Show the big leaderboard after every win (1) or only every 3rd win, etc. |
+Also here: **▶ Start next round now** and **🔁 New session now** (resets scores + round counter), and the round-end timing sliders (round time, winner window, leaderboard, reveal).
+
+## 🎯 Scoring & fairness (⚙️ -> 🎯 Scoring)
+Points per correct answer (1-10) · ⚡ speed bonus (answer within X% of the time) · 🔥 streak bonus for the same viewer winning again and again · 💸 hint penalty (1 point per hint shown, never below 1) · 🧊 wrong-guess cooldown per viewer against spam (correct guesses always count) · 🚫 list of viewers to ignore.
+Default = exactly like before: 1 point per win.
+
+## 🧩 Puzzle style (⚙️ -> 🎮 Game)
+Keep the first letter in place · shuffle each word separately · hints revealed random or left-to-right.
+
+## 🔊 Sounds (⚙️ -> 🔊 Sounds)
+Master switch + volume, 4 sound styles (chime, arcade, gentle, bell), and separate on/off for: win, new round, time up, last-seconds tick (choose how many seconds). Test buttons included.
+
+## ✍️ Text & Effects (⚙️ -> ✍️ Text & Effects)
+Category banner text, round number badge ("ROUND 3/10"), banner colours and size · timer style (bar + number / number / bar), size, bar colour, red warning pulse in the last N seconds · hidden-letter symbol (• _ ? ★ ○ 🧶), hint colour/size · **every message editable** ({user} {s} {n} placeholders): timer, solved, time up, paused, waiting, stopped, session complete, countdown label, start button, final leaderboard heading · footer colour/size · 🎉 confetti when a viewer wins (yarn / party / stars / balloons / hearts / your own emoji, amount) · show/hide @ before names · chat shows only correct guesses · win-streak flame in the winner window (⚙️ -> 🪟 Windows).
+👁 **Preview** shows your unsaved changes on the real game screen.
+
+## 🧰 Toolbar
+Every new on/off, slider and dropdown can be pinned to the top toolbar too (⚙️ -> 🧰 Toolbar), e.g. pin the 🔁 auto-next switch to turn it off in the middle of a show.
+
+## Where things are saved
+Server (`DATA_DIR` / `data/settings.json`): Game, Next Round, Scoring. This device (browser): Look, Layout, Windows, Letter Boxes, Sounds, Text & Effects, Toolbar.
+
+---
+
 # WORD SHUFFLE - Knitting Edition 🧶
 Look & feel matches the platform's yarn theme: knitted-fabric background, yarn-ball buttons, stitched borders, multicolour yarn letter boxes, seven knitted-background themes (`knit_...`) plus all 19 original themes with a plain background (`plain: true` in `themes.js`). Theme colours live in `client/src/themes.js`, the stitch/yarn styling is the "KNITTING LAYER" at the end of `client/src/styles.css`. New puzzle category: KNITTING & YARN (`data/puzzles.extra.json`).
 
@@ -29,8 +67,8 @@ Env vars: `TIKTOK_USERNAME`, `TIKTOK_SIGN_API_KEY`, optional `ADMIN_PIN`, `ROUND
 ## Test bot (new, Test mode only)
 The 🤖 button (bottom row in Test mode) starts/stops fake viewers who guess by themselves: mostly wrong guesses and near-misses, and sometimes a correct answer at a random moment. Tune it in ⚙️ -> Game (bottom): *Bot guesses every* (seconds), *Chance the bot solves a round* (%). It only runs in Test mode.
 
-## Scoring (fixed)
-One winner per round: the first correct guess ends the round and earns **1 point**. The leaderboard only lists real winners (no empty "waiting" rows).
+## Scoring
+One winner per round: the first correct guess ends the round and earns **1 point** by default (change points, bonuses and penalties in ⚙️ -> 🎯 Scoring). The leaderboard only lists real winners (no empty "waiting" rows).
 
 ## Guess window
 A floating card under the category banner shows **one guess at a time** (the viewer's circular TikTok picture + their guess). It only appears when someone guesses, stays for a few seconds (⚙️ → Layout → "Guess window stays for"), then disappears. It has its own reserved row, so it can never cover the puzzle letters.

@@ -25,9 +25,19 @@ console.log(`Loaded ${CATS.length} categories from ${path.basename(dbFile)}`);
 // ---------- host-adjustable game settings ----------
 const DEF = { roundSeconds: +process.env.ROUND_SECONDS || 90, revealSeconds: 10, showAnswer: true, showAnswerWin: true, popupSecs: 8, showLbOverlay: true, lbSecs: 10, minLetters: 5, maxLetters: 20,
   allowMulti: true, spaceless: true, hints: true, hintStart: 40, hintEvery: 10, maxHints: 3,
-  wordPercent: 15, botOn: false, botEvery: 4, botSkill: 80, disabled: [], mode: 'random', picked: [] };
+  wordPercent: 15, botOn: false, botEvery: 4, botSkill: 80, disabled: [], mode: 'random', picked: [],
+  // --- auto next round ---
+  autoNext: true, breakSecs: 0, stopAfterUnsolved: 0, sessionRounds: 0, endAction: 'wait', finalLbSecs: 10, catEvery: 1, catOrder: 'random', lbEvery: 1, secsPerLetter: 0,
+  // --- scoring & fairness ---
+  pointsPerWin: 1, speedBonusOn: false, speedBonusPct: 30, speedBonusPts: 1, streakBonus: 0, hintPenalty: false, guessCooldown: 0, blocklist: '',
+  // --- puzzle style ---
+  keepFirst: false, perWord: false, hintMode: 'random' };
 const RANGE = { roundSeconds: [20, 300], revealSeconds: [3, 30], popupSecs: [2, 30], lbSecs: [3, 60], minLetters: [3, 25], maxLetters: [3, 25], hintStart: [10, 90],
-  hintEvery: [3, 60], maxHints: [0, 10], botEvery: [1, 30], botSkill: [0, 100], wordPercent: [0, 100] };
+  hintEvery: [3, 60], maxHints: [0, 10], botEvery: [1, 30], botSkill: [0, 100], wordPercent: [0, 100],
+  breakSecs: [0, 60], stopAfterUnsolved: [0, 20], sessionRounds: [0, 500], finalLbSecs: [0, 120], catEvery: [1, 20], lbEvery: [1, 20], secsPerLetter: [0, 10],
+  pointsPerWin: [1, 10], speedBonusPct: [10, 90], speedBonusPts: [1, 10], streakBonus: [0, 5], guessCooldown: [0, 30] };
+const BOOLS = ['allowMulti', 'spaceless', 'hints', 'showAnswer', 'showAnswerWin', 'showLbOverlay', 'botOn', 'autoNext', 'speedBonusOn', 'hintPenalty', 'keepFirst', 'perWord'];
+const CHOICES = { mode: ['random', 'specific'], endAction: ['wait', 'continue', 'restart'], catOrder: ['random', 'sequence'], hintMode: ['random', 'ordered'] };
 // DATA_DIR (optional env): point it at a persistent disk so saved settings survive redeploys
 const DATA_DIR = process.env.DATA_DIR || R('data');
 const SFILE = path.join(DATA_DIR, 'settings.json');   // current settings (Save & Apply)
@@ -45,15 +55,20 @@ function applyCustom() {
 }
 applyCustom();
 let cfg = { ...DEF, ...userDef, ...readJSON(SFILE) };
+let blocked = new Set();   // viewers the host ignores (settings -> Scoring & fairness -> Ignore these viewers)
+function rebuildBlocked() { blocked = new Set(String(cfg.blocklist || '').split(/[\s,;]+/).map(x => x.replace(/^@/, '').toLowerCase()).filter(Boolean)); }
+rebuildBlocked();
 let saveT;
 function applyPatch(p) {
   for (const [k, v] of Object.entries(p || {})) {
     if (RANGE[k] && typeof v === 'number') cfg[k] = Math.min(RANGE[k][1], Math.max(RANGE[k][0], Math.round(v)));
-    else if (['allowMulti', 'spaceless', 'hints', 'showAnswer', 'showAnswerWin', 'showLbOverlay', 'botOn'].includes(k)) cfg[k] = !!v;
+    else if (BOOLS.includes(k)) cfg[k] = !!v;
     else if ((k === 'disabled' || k === 'picked') && Array.isArray(v)) cfg[k] = v.filter(c => CATS.includes(c));
-    else if (k === 'mode' && ['random', 'specific'].includes(v)) cfg.mode = v;
+    else if (CHOICES[k] && CHOICES[k].includes(v)) cfg[k] = v;
+    else if (k === 'blocklist' && typeof v === 'string') cfg.blocklist = v.slice(0, 600);
   }
   if (cfg.minLetters > cfg.maxLetters) cfg.maxLetters = cfg.minLetters;
+  rebuildBlocked();
   clearTimeout(saveT); saveT = setTimeout(() => persist(SFILE, cfg), 1000);
 }
 
@@ -87,22 +102,25 @@ const norm = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '
 const normStrict = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
 
 // Scrambles letters only; spaces stay in their exact original positions.
+// Optional: perWord (each word is shuffled inside itself) and keepFirst (the first letter of the answer / of each word stays where it is).
 function scramble(answer) {
-  const chars = [...answer], pos = [];
-  chars.forEach((c, i) => { if (c !== ' ') pos.push(i); });
-  const letters = pos.map(i => chars[i]);
-  const canDiffer = new Set(letters).size > 1;
+  const chars = [...answer], groups = [];
+  if (cfg.perWord) { let cur = []; chars.forEach((c, i) => { if (c === ' ') { if (cur.length) groups.push(cur); cur = []; } else cur.push(i); }); if (cur.length) groups.push(cur); }
+  else groups.push(chars.map((c, i) => (c === ' ' ? -1 : i)).filter(i => i >= 0));
   let out = chars;
   for (let t = 0; t < 50; t++) {
-    const a = [...letters];
-    for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
-    out = [...chars]; pos.forEach((p, k) => { out[p] = a[k]; });
-    if (!canDiffer || out.join('') !== answer) break;
+    out = [...chars];
+    for (const g of groups) {
+      const pos = cfg.keepFirst ? g.slice(1) : g, a = pos.map(i => chars[i]);
+      for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+      pos.forEach((p, k) => { out[p] = a[k]; });
+    }
+    if (out.join('') !== answer) break;
   }
   return out.join('');
 }
 
-const used = {}; let lastCat = null;
+const used = {}; let lastCat = null, catStreak = 0;
 function pick() {
   const okAns = a => { const n = a.replace(/ /g, '').length; return n >= cfg.minLetters && n <= cfg.maxLetters && (cfg.allowMulti || !a.includes(' ')); };
   const chosen = cfg.mode === 'specific' ? CATS.filter(c => cfg.picked.includes(c)) : [];
@@ -110,10 +128,21 @@ function pick() {
   let pools = base.map(c => [c, DB[c].filter(okAns)]).filter(([, l]) => l.length);
   if (!pools.length) pools = (base.length ? base : CATS).map(c => [c, DB[c]]);       // letter filters too strict -> ignore them
   const isW = c => c.startsWith('WORDS STARTING WITH'), wp = pools.filter(([c]) => isW(c)), tp = pools.filter(([c]) => !isW(c));
-  if (wp.length && tp.length) pools = Math.random() * 100 < (cfg.wordPercent ?? 15) ? wp : tp;   // Word Power = one share, themed categories keep the rest
-  let [cat, list] = pools[Math.floor(Math.random() * pools.length)];
-  if (pools.length > 1 && cat === lastCat) [cat, list] = pools.filter(([c]) => c !== lastCat)[Math.floor(Math.random() * (pools.length - 1))];
-  lastCat = cat;
+  const keep = lastCat && catStreak < cfg.catEvery ? pools.find(([c]) => c === lastCat) : null;   // "keep the same category for N rounds"
+  let cat, list;
+  if (keep) [cat, list] = keep;
+  else {
+    if (cfg.catOrder === 'sequence') {   // go through the categories one after another (in the order of the category list)
+      const names = pools.map(p => p[0]), at = names.indexOf(lastCat);
+      [cat, list] = pools[(at + 1) % pools.length];
+    } else {
+      if (wp.length && tp.length) pools = Math.random() * 100 < (cfg.wordPercent ?? 15) ? wp : tp;   // Word Power = one share, themed categories keep the rest
+      [cat, list] = pools[Math.floor(Math.random() * pools.length)];
+      if (pools.length > 1 && cat === lastCat) [cat, list] = pools.filter(([c]) => c !== lastCat)[Math.floor(Math.random() * (pools.length - 1))];
+    }
+    catStreak = 0;
+  }
+  catStreak++; lastCat = cat;
   const u = used[cat] || (used[cat] = new Set());
   let fresh = list.filter(a => !u.has(a));
   if (!fresh.length) { u.clear(); fresh = list; }
@@ -127,7 +156,10 @@ const users = new Map();     // user -> {user, pic, score, wins, words[]}
 const pics = new Map();      // user -> latest profile picture url
 let botPlan = { solveAt: null, nextChat: 0 };
 let round = 0, current = null, phaseEnd = 0, paused = false, pausedAt = 0, revealed = new Set();
-let state = { phase: 'playing', round: 0, category: '', scrambled: '', answer: null, winner: null, winnerInfo: null, hint: '', total: cfg.roundSeconds, popupSecs: 0, lbSecs: 0 };
+// session / streak counters (used by the auto-next-round settings and the scoring bonuses)
+let sessionRound = 0, sessionDone = false, unsolvedRun = 0, solvedCount = 0, winStreak = 0, lastWinner = null;
+const resetCounters = () => { sessionRound = 0; sessionDone = false; unsolvedRun = 0; solvedCount = 0; winStreak = 0; lastWinner = null; };
+let state = { phase: 'playing', round: 0, category: '', scrambled: '', answer: null, winner: null, winnerInfo: null, hint: '', total: cfg.roundSeconds, popupSecs: 0, lbSecs: 0, revealTotal: 0, breakSecs: 0, waiting: '', sround: 0, stotal: 0, sessionOver: false };
 
 const top = () => [...users.values()].sort((a, b) => b.score - a.score || (a.t || 0) - (b.t || 0)).slice(0, 10)
   .map(u => ({ user: u.user, pic: u.pic, score: u.score, wins: u.wins }));   // answers are never sent with the leaderboard
@@ -135,7 +167,7 @@ const top = () => [...users.values()].sort((a, b) => b.score - a.score || (a.t |
 const everyone = () => [...users.values()].filter(u => u.score > 0).sort((a, b) => b.score - a.score || (a.t || 0) - (b.t || 0))
   .map(u => ({ user: u.user, pic: u.pic, score: u.score, wins: u.wins }));
 const snap = () => ({ ...state, paused, peek: playMode === 'test' && current ? current.answer : '', remaining: Math.max(0, Math.ceil((phaseEnd - (paused ? pausedAt : Date.now())) / 1000)), leaderboard: top(),
-  full: state.phase === 'reveal' && state.winner ? everyone() : [] });
+  full: (state.phase === 'reveal' && state.winner) || state.phase === 'final' ? everyone() : [] });
 const pub = () => ({ cfg, cats: CATS, custom, pinRequired: !!ADMIN_PIN, hasDefaults: Object.keys(userDef).length > 0,
   playMode, tt: { status: ttStatus, user: ttCreds().name, hasKey: !!ttCreds().key, keyHint: keyHint(ttCreds().key) } });
 
@@ -144,40 +176,74 @@ const broadcast = () => io.emit('state', snap());
 const mask = () => [...current.answer].map((c, i) => c === ' ' ? ' ' : revealed.has(i) ? c : '_').join('');
 
 function startRound() {
-  current = pick(); round++; revealed = new Set(); planBot();
-  phaseEnd = Date.now() + cfg.roundSeconds * 1000; if (paused) pausedAt = Date.now();
-  state = { phase: 'playing', round, category: current.category, scrambled: scramble(current.answer), answer: null, winner: null, winnerInfo: null, hint: '', total: cfg.roundSeconds, popupSecs: 0, lbSecs: 0 };
+  if (state.waiting) unsolvedRun = 0;                 // the host restarted the game after an automatic stop
+  if (sessionDone) {                                  // the previous round finished a session -> a new session begins
+    sessionDone = false; sessionRound = 0; winStreak = 0; lastWinner = null;
+    if (cfg.endAction === 'restart') { users.clear(); solvedCount = 0; feedBuf = []; io.emit('feedClear'); }
+  }
+  current = pick(); round++; sessionRound++; revealed = new Set();
+  const letters = current.answer.replace(/ /g, '').length, total = Math.min(600, Math.max(10, cfg.roundSeconds + cfg.secsPerLetter * letters));   // "extra seconds per letter" makes long words get more time
+  planBot(total);
+  phaseEnd = Date.now() + total * 1000; if (paused) pausedAt = Date.now();
+  state = { phase: 'playing', round, category: current.category, scrambled: scramble(current.answer), answer: null, winner: null, winnerInfo: null, hint: '', total, popupSecs: 0, lbSecs: 0,
+    revealTotal: 0, breakSecs: 0, waiting: '', sround: sessionRound, stotal: cfg.sessionRounds, sessionOver: false };
   broadcast();
 }
-function endRound(w) {
+function endRound(w, skipped) {
   if (state.phase !== 'playing') return;
   let info = null;
   if (w) {
-    const pts = 1;                                    // fixed: 1 point per correct guess, one winner per round
+    let pts = cfg.pointsPerWin;                       // base points (default 1)
+    const elapsed = (Date.now() - (phaseEnd - state.total * 1000)) / 1000;
+    if (cfg.speedBonusOn && elapsed <= state.total * cfg.speedBonusPct / 100) pts += cfg.speedBonusPts;   // solved fast -> bonus
+    winStreak = lastWinner === w.user ? winStreak + 1 : 1; lastWinner = w.user;
+    if (cfg.streakBonus > 0) pts += Math.min(winStreak - 1, 5) * cfg.streakBonus;                       // same viewer wins again and again -> bonus
+    if (cfg.hintPenalty) pts = Math.max(1, pts - revealed.size);                                          // every hint costs 1 point (never below 1)
     const u = users.get(w.user) || { user: w.user, pic: '', score: 0, wins: 0, words: [], t: 0 };
     if (w.pic) u.pic = w.pic;
     u.score += pts; u.wins++; u.t = Date.now();
     if (cfg.showAnswerWin) u.words = [...u.words, current.answer].slice(-6);   // hidden answers never leak via the leaderboard
     users.set(w.user, u);
-    info = { user: u.user, pic: u.pic, pts, word: cfg.showAnswerWin ? current.answer : '' };
-  }
-  // Solved round: centre winner window (popupSecs) -> full leaderboard (lbSecs). Unsolved round: plain reveal time.
-  const lbSecs = w && cfg.showLbOverlay ? cfg.lbSecs : 0;
-  const secs = w ? cfg.popupSecs + lbSecs : cfg.revealSeconds;
+    solvedCount++; unsolvedRun = 0;
+    info = { user: u.user, pic: u.pic, pts, streak: winStreak, word: cfg.showAnswerWin ? current.answer : '' };
+  } else { lastWinner = null; winStreak = 0; if (!skipped) unsolvedRun++; }
+  sessionDone = cfg.sessionRounds > 0 && sessionRound >= cfg.sessionRounds;
+  // Solved round: centre winner window (popupSecs) -> full leaderboard (lbSecs, every "lbEvery" wins) -> optional break. Unsolved round: plain reveal time + break.
+  const lbSecs = w && cfg.showLbOverlay && solvedCount % cfg.lbEvery === 0 ? cfg.lbSecs : 0;
+  const secs = (w ? cfg.popupSecs + lbSecs : cfg.revealSeconds) + cfg.breakSecs;
   phaseEnd = Date.now() + secs * 1000; if (paused) pausedAt = Date.now();
   const showAns = w ? cfg.showAnswerWin : cfg.showAnswer;   // two separate switches: "guessed correctly" vs "time ran out"
-  state = { ...state, phase: 'reveal', answer: showAns ? current.answer : null, winner: w ? w.user : null, winnerInfo: info, popupSecs: w ? cfg.popupSecs : 0, lbSecs };
+  state = { ...state, phase: 'reveal', answer: showAns ? current.answer : null, winner: w ? w.user : null, winnerInfo: info, popupSecs: w ? cfg.popupSecs : 0, lbSecs,
+    revealTotal: secs, breakSecs: cfg.breakSecs, waiting: '', sessionOver: sessionDone };
   broadcast();
+}
+// the last round of a session is over: show the final leaderboard for a while
+function startFinale() {
+  phaseEnd = Date.now() + cfg.finalLbSecs * 1000; if (paused) pausedAt = Date.now();
+  state = { ...state, phase: 'final', popupSecs: 0, lbSecs: cfg.finalLbSecs, revealTotal: cfg.finalLbSecs, breakSecs: 0, waiting: '' };
+  broadcast();
+}
+// the reveal (and finale) is over: start the next round by itself, or wait for the host
+function goWaiting(why) { if (state.waiting) return; state.waiting = why; broadcast(); }
+function afterReveal() {
+  if (sessionDone) return cfg.endAction === 'wait' ? goWaiting('session') : startRound();   // continue / restart = a new session starts by itself
+  if (!cfg.autoNext) return goWaiting('manual');
+  if (cfg.stopAfterUnsolved > 0 && unsolvedRun >= cfg.stopAfterUnsolved) return goWaiting('idle');   // nobody is playing -> stop by itself
+  startRound();
 }
 function revealOne() {
   const c = [...current.answer].map((ch, i) => ch === ' ' || revealed.has(i) ? -1 : i).filter(i => i >= 0);
   if (c.length <= 1) return false;
-  revealed.add(c[Math.floor(Math.random() * c.length)]); return true;
+  revealed.add(cfg.hintMode === 'ordered' ? c[0] : c[Math.floor(Math.random() * c.length)]); return true;   // ordered = left to right
 }
 setInterval(() => {                                   // one ticker: round end, reveal end, auto-hints
-  if (paused) return;
+  if (paused || state.waiting) return;                // waiting = the game stopped by itself and waits for the host (press next)
   const now = Date.now();
-  if (now >= phaseEnd) return state.phase === 'playing' ? endRound(null) : startRound();
+  if (now >= phaseEnd) {
+    if (state.phase === 'playing') return endRound(null);
+    if (state.phase === 'reveal' && sessionDone && cfg.finalLbSecs > 0 && everyone().length) return startFinale();
+    return afterReveal();
+  }
   if (state.phase === 'playing' && cfg.hints) {
     const el = (now - (phaseEnd - state.total * 1000)) / 1000, st = state.total * cfg.hintStart / 100;
     const target = el >= st ? Math.min(cfg.maxHints, 1 + Math.floor((el - st) / cfg.hintEvery)) : 0;
@@ -191,9 +257,9 @@ setInterval(() => {                                   // one ticker: round end, 
 const BOT_NAMES = ['luna_x', 'mike99', 'sarah.j', 'tiktokfan', 'bella.b', 'jayden_', 'coolcat', 'sam_the_man', 'zoe.zoe', 'dj_max', 'nina_k', 'alex.plays'];
 const BOT_WORDS = ['apple', 'hello', 'cat', 'pizza', 'wow', 'maybe', 'nope', 'lol', 'is it food?', 'hmm', 'too hard', 'dog', 'blue', 'idk', 'love', 'omg'];
 const rnd = a => a[Math.floor(Math.random() * a.length)];
-function planBot() {                                  // decided once per round: will a bot solve it, and when?
+function planBot(total) {                             // decided once per round: will a bot solve it, and when?
   const solves = Math.random() * 100 < cfg.botSkill;
-  botPlan = { solveAt: solves ? cfg.roundSeconds * (0.1 + Math.random() * 0.8) : null, nextChat: Date.now() + 1500 + Math.random() * 2000 };
+  botPlan = { solveAt: solves ? total * (0.1 + Math.random() * 0.8) : null, nextChat: Date.now() + 1500 + Math.random() * 2000 };
 }
 function botWrongGuess() {                            // never equals the real answer
   const ans = current.answer, letters = [...ans.replace(/ /g, '')];
@@ -219,15 +285,21 @@ setInterval(() => {
 
 // ---------- chat ----------
 let feedBuf = [], feedId = 0;
+const lastGuess = new Map();   // viewer -> time of their last wrong guess (guess cooldown)
 setInterval(() => { if (feedBuf.length) { io.emit('feed', feedBuf); feedBuf = []; } }, 300);
 
 function onGuess(user, text, pic) {
   user = String(user || 'viewer').replace(/^@/, '');
   text = String(text || '').slice(0, 60);
-  if (!norm(text)) return false;
+  if (!norm(text) || blocked.has(user.toLowerCase())) return false;   // ignored viewers (host's block list)
   if (pic) { pics.set(user, pic); if (pics.size > 3000) pics.delete(pics.keys().next().value); }
   const ok = state.phase === 'playing' && !paused &&
     (cfg.spaceless ? norm(text) === norm(current.answer) : normStrict(text) === current.answer);
+  if (!ok && cfg.guessCooldown > 0) {                 // anti-spam: wrong guesses are limited to one every N seconds per viewer (a correct guess always counts)
+    const now = Date.now(), last = lastGuess.get(user) || 0;
+    if (now - last < cfg.guessCooldown * 1000) return false;
+    lastGuess.set(user, now); if (lastGuess.size > 3000) lastGuess.delete(lastGuess.keys().next().value);
+  }
   feedBuf.push({ id: ++feedId, user, text: ok ? (cfg.showAnswerWin ? '✅ ' + text : '✅ got it!') : text, ok, pic: pics.get(user) || '' });
   if (feedBuf.length > 40) feedBuf.shift();
   if (ok) endRound({ user, pic: pics.get(user) || '' });
@@ -279,7 +351,7 @@ function setMode(m) {
   if (!MODES.includes(m) || m === playMode) return;
   playMode = m; persist(MFILE, { mode: m });
   disconnectTikTok();
-  users.clear(); feedBuf = [];                        // test/offline scores must never leak into a live show
+  users.clear(); feedBuf = []; resetCounters();       // test/offline scores must never leak into a live show
   io.emit('feedClear');
   if (m === 'live') connectTikTok();
   io.emit('settings', pub()); startRound();
@@ -309,7 +381,7 @@ io.on('connection', socket => {
         io.emit('settings', pub()); startRound(); break;
       case 'resetDefaults':   // back to the host's saved defaults (or factory defaults)
         if (m.factory) { userDef = {}; try { fs.unlinkSync(DFILE); } catch {} }
-        cfg = { ...DEF, ...JSON.parse(JSON.stringify(userDef)) }; persist(SFILE, cfg);
+        cfg = { ...DEF, ...JSON.parse(JSON.stringify(userDef)) }; rebuildBlocked(); persist(SFILE, cfg);
         io.emit('settings', pub()); startRound(); break;
       case 'custom': {   // create / replace / delete a host category
         const name = String(m.name || '').toUpperCase().replace(/[^A-Z0-9 &]/g, '').replace(/\s+/g, ' ').trim().slice(0, 30);
@@ -332,11 +404,12 @@ io.on('connection', socket => {
       case 'testSolve': if (playMode === 'test' && state.phase === 'playing' && current) onGuess(FAKE_USERS[Math.floor(Math.random() * FAKE_USERS.length)], current.answer, ''); break;
       case 'testChat': if (playMode === 'test') for (let i = 0; i < 5; i++) onGuess(FAKE_USERS[Math.floor(Math.random() * FAKE_USERS.length)], FAKE_WORDS[Math.floor(Math.random() * FAKE_WORDS.length)], ''); break;
       case 'pause': if (!paused) { paused = true; pausedAt = Date.now(); } else { phaseEnd += Date.now() - pausedAt; paused = false; } broadcast(); break;
-      case 'skip': state.phase === 'playing' ? endRound(null) : startRound(); break;
+      case 'skip': state.phase === 'playing' ? endRound(null, true) : startRound(); break;   // skipping never counts as an "unsolved" round
+      case 'newSession': users.clear(); feedBuf = []; resetCounters(); io.emit('feedClear'); startRound(); break;   // scores + round counter back to zero
       case 'hint': if (state.phase === 'playing' && !paused && revealOne()) { state.hint = mask(); broadcast(); } break;
       case 'time': if (state.phase === 'playing') { phaseEnd += 15000; state.total += 15; broadcast(); } break;
       case 'next': startRound(); break;
-      case 'reset': users.clear(); broadcast(); break;
+      case 'reset': users.clear(); solvedCount = 0; winStreak = 0; lastWinner = null; broadcast(); break;
     }
     done({ ok: true });
   });

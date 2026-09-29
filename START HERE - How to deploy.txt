@@ -1,39 +1,31 @@
-WORD SHUFFLE  -  KNITTING EDITION  🧶
-=====================================
+WORD SHUFFLE 8  -  KNITTING EDITION  🧶
+=======================================
 
-WHAT CHANGED
-------------
-The whole game now wears the same knitting look as your platform:
- - Knitted-fabric background (tiny rows of stitches) in soft wool colours
- - Every button is a little yarn ball with a stitched ring
- - Every letter box is a knitted patch with a stitched border, and each one
-   is a different yarn colour (mustard, moss, terracotta, denim, rose, lavender)
- - Solved words turn moss-green
- - Timer bar looks like twisted yarn
- - Stitched (dashed) borders on the leaderboard, chat, winner window, menus
-   and settings screens
- - THEMES (tap the theme button on the top bar to switch). The list has
-   two groups:
-     1) 🧶 KNITTED BACKGROUND - the 6 wool themes from your platform
-        (Cream, Sky Blue, Meadow, Blossom, Lavender, Honey) + Night Wool (dark)
-     2) 🎨 PLAIN BACKGROUND - ALL your previous themes (Cotton Candy, Peach
-        Bunny, Minty Fresh, Dark, Light, Cream, Sky Blue, Meadow Green,
-        Blossom Pink, Lavender Violet, Honey Gold, Bubblegum, Candy Pink,
-        Aurora, Sunset, Ocean, Midnight, Neon Arcade, Coffee).
-        Same colours as before, with the knitting buttons, stitched borders
-        and yarn letter boxes, but a smooth plain colour background.
- - New puzzle category: KNITTING & YARN
- - Yarn-ball icon on the browser tab
+WHAT IS NEW IN THIS VERSION
+---------------------------
+1) AUTO NEXT ROUND  (settings ⚙️ -> ⏭ Next Round)
+   - Automatic or manual next round (manual = big ▶ START NEXT ROUND button)
+   - Extra break between rounds, extra time per letter
+   - Stops by itself when nobody guesses for N rounds
+   - Sessions: play N rounds, then final leaderboard, then stop / restart
+   - Keep a category for N rounds, or go through categories in order
+   - Big leaderboard after every win, or only every N wins
+2) MORE PERSONALISATION
+   - ⚙️ -> 🎯 Scoring : points, speed bonus, streak bonus, hint penalty,
+                        anti-spam cooldown, ignore-list of viewers
+   - ⚙️ -> 🔊 Sounds  : 4 sound styles, win / new round / time up / countdown tick
+   - ⚙️ -> ✍️ Text & Effects : edit every message, round badge, banner / timer /
+                        hint / footer looks, warning pulse, confetti, hide @ names
+   - ⚙️ -> 🎮 Game    : keep first letter, shuffle each word, hint order
+   - Every new switch / slider can also be pinned on the top toolbar.
+   The settings tabs are now one swipeable row - swipe left/right to see them all.
 
-You do NOT need to change anything in the code.
-The footer text is empty by default (you can type your own in Settings > Footer text).
-Letter boxes are flat yarn colour: the shiny highlight was removed.
-Chat and leaderboard are now stacked, full width: LEADERBOARD on top, LIVE CHAT below. Rows are solid, high-contrast cards (medal, picture, name and a coloured score badge; chat shows @name then the message). In Settings > Layout you can change how many leaderboard rows and live chat rows show.
+Nothing in your existing settings is lost. Defaults behave exactly like before.
 
 
-HOW TO DEPLOY (same way as before)
-----------------------------------
-1. Unzip / open this folder "word-shuffle" on your computer.
+HOW TO DEPLOY (same as before)
+------------------------------
+1. Unzip this file. Open the folder "word-shuffle".
 
 2. GitHub:
    - Open your existing WORD SHUFFLE repository on github.com
@@ -44,33 +36,33 @@ HOW TO DEPLOY (same way as before)
    - Click the green "Commit changes" button.
 
 3. Render.com:
-   - If you already have WORD SHUFFLE on Render, it redeploys by itself
-     after you commit. Wait until it says "Live".
-   - If it is new: New + > Web Service > pick your repository, then set
+   - Existing service: it redeploys by itself after you commit. Wait for "Live".
+   - New service: New + > Web Service > pick your repository, then set
         Build Command:  npm install
         Start Command:  npm start
-     and add these under Environment:
-        TIKTOK_USERNAME  = your TikTok name (no @)
-        TIKTOK_SIGN_API_KEY = your Euler key
-     Then click "Create Web Service".
+     Environment (optional but recommended):
+        TIKTOK_USERNAME     = your TikTok name (no @)   (or type it in Settings > Live)
+        TIKTOK_SIGN_API_KEY = your Euler key            (or type it in Settings > Live)
+        ADMIN_PIN           = a PIN so nobody else can change settings
+        DATA_DIR            = /var/data  (only if you added a Render persistent disk,
+                                          so saved settings survive redeploys)
 
-4. Open your Render link on your phone. You should see the cream wool
-   background with yarn-coloured letter boxes.
+4. Open your Render link on your phone.
+   Safe workflow: stay in TEST mode, try the new settings, then switch to LIVE.
+
+
+TRY THE NEW FEATURES IN 2 MINUTES (Test mode)
+---------------------------------------------
+ - ⚙️ -> ⏭ Next Round: turn OFF "Start the next round automatically", Save & Apply,
+   press ✅ (solve as fake viewer). After the winner window the big ▶ button appears.
+ - ⚙️ -> ✍️ Text & Effects: switch on "Confetti", press 👁 Preview.
+ - ⚙️ -> ⏭ Next Round: "Rounds per session" = 3, Save & Apply, and play 3 rounds
+   with the 🤖 bot to see the final leaderboard.
 
 
 IF YOU STILL SEE THE OLD LOOK
 -----------------------------
  - Refresh the page (pull down), or close and reopen the browser tab.
- - The first time it opens, the game clears the OLD custom colours
-   saved on your phone, so the knitting look shows up. Your chosen theme is kept. Your other settings
-   (round time, title text, toolbar buttons, etc.) are kept.
 
-OPTIONAL LOOK SETTINGS
-----------------------
-Settings (gear button) > Look > Letter boxes:
-  "Multicolour yarn boxes" - turn OFF if you want all boxes in one wool
-  colour (the theme colour) instead.
-
-NOTE: I could not run a test build in my workspace (no internet there), so
-the first Render build is the real test. If Render shows "Build failed",
-copy the last 20 lines of the red log and send them to me - I'll fix it.
+NOTE: if Render shows "Build failed", copy the last 20 lines of the red log
+and send them to me - I'll fix it.

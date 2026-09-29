@@ -3,14 +3,14 @@ html,body{width:100%;height:100%;height:var(--app-h,100dvh);overflow:hidden;over
 body{position:fixed;inset:0;display:flex;justify-content:center;align-items:center;padding:env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0)}
 #root{width:100%;height:100%;display:flex;justify-content:center;align-items:center;overflow:hidden}
 /* Fixed 9:16 stage. Four grid zones; every zone clips its own content, so nothing can spill into a neighbour. */
-.stage{position:relative;flex:none;width:min(var(--sw,100vw),calc(var(--sh,100dvh)*9/16));height:min(var(--sh,100dvh),calc(var(--sw,100vw)*16/9));max-width:100%;max-height:100%;container-type:size;display:grid;overflow:hidden;
+.stage{position:relative;flex:none;width:min(var(--sw,100vw),calc(var(--sh,100dvh)*9/16));height:min(var(--sh,100dvh),calc(var(--sw,100vw)*16/9));max-width:100%;max-height:100%;container-type:size;display:grid;grid-template-columns:minmax(0,1fr);overflow:hidden;
   color:var(--text);font-family:var(--ff,system-ui);font-variant-numeric:tabular-nums;background:radial-gradient(circle at 12% 18%,#fff8 0 1.2cqw,#0000 1.3cqw),radial-gradient(circle at 85% 30%,#fff7 0 1.6cqw,#0000 1.7cqw),radial-gradient(circle at 20% 72%,#fff7 0 1cqw,#0000 1.1cqw),radial-gradient(circle at 90% 85%,#fff8 0 1.4cqw,#0000 1.5cqw),linear-gradient(160deg,var(--bg1),var(--bg2))}
 .wait{margin:auto;font-size:6cqw}
 .z{min-width:0;min-height:0;overflow:hidden;padding:0 4cqw;display:flex;flex-direction:column}
 .hid{visibility:hidden}
 .calm *{animation:none!important;transition:none!important}
 /* HOST TOOLBAR - always visible, big touch targets */
-.bar{position:relative;z-index:30;height:calc(var(--barH,12)*1cqw);padding:0 2cqw;display:flex;align-items:center;justify-content:flex-start;gap:1cqw;background:var(--panel);backdrop-filter:blur(6px);border-bottom:.6cqw dashed var(--te);border-radius:0 0 5cqw 5cqw}
+.bar{min-width:0;max-width:100%;overflow:hidden;position:relative;z-index:30;height:calc(var(--barH,12)*1cqw);padding:0 2cqw;display:flex;align-items:center;justify-content:flex-start;gap:1cqw;background:var(--panel);backdrop-filter:blur(6px);border-bottom:.6cqw dashed var(--te);border-radius:0 0 5cqw 5cqw}
 .bar button{flex:0 0 calc(var(--bs,8)*1cqw);width:calc(var(--bs,8)*1cqw);min-width:0;aspect-ratio:1;padding:0;display:grid;place-items:center;border-radius:35%;border:.5cqw solid var(--te);background:linear-gradient(var(--t1),var(--t2));color:var(--tt);font-size:calc(var(--bs,8)*.55cqw);line-height:1;cursor:pointer;box-shadow:0 .7cqw 0 var(--te);transition:transform .1s}
 .bar .brand{flex:1 1 0;width:auto;min-width:0;height:8.4cqw;display:flex;align-items:center;justify-content:center;padding:0 2cqw;overflow:hidden;border-radius:99px;border:.5cqw solid #fffb;background:linear-gradient(90deg,var(--a1),var(--a2));color:var(--bt);box-shadow:0 .6cqw 0 #0003;font-family:var(--tf);font-weight:400}
 .bar .brand span{display:block;flex:none;font-size:calc(5.6cqw*var(--fs));line-height:1.1;letter-spacing:.3cqw;white-space:nowrap;text-shadow:0 .3cqw 0 #0002}

@@ -83,3 +83,6 @@ Puzzle letters and the timer sit higher on the screen, giving the bottom leaderb
 - **Word Power**: 26 dictionary categories ("WORDS STARTING WITH B" ...) hold ~50k real words. In Random mix they get a set share of rounds (Game tab -> Word Power share, default 15%) so themed categories still appear often. Set 0% to switch them off.
 - **Live login window**: switching to Live opens a centred window for TikTok username + Euler key + Save & Connect (still available in Settings -> Live). Turn it off in Look -> "Show the TikTok login window".
 - **More customizing**: 5 colour pickers (backgrounds, accents, text) under Look, the Word Power share, the login-window toggle, and a new **✍️ My Puzzles** tab to create your own categories (saved in `data/custom.json`, use DATA_DIR to persist). All new options can also be pinned to the toolbar.
+
+## Phone-fit fix (root cause)
+The stage grid had no explicit column, so the toolbar could widen the whole layout beyond the phone screen. The stage now has a fixed single column (`grid-template-columns:minmax(0,1fr)`) and the toolbar is clipped to it. Verified in a mobile-browser emulator on 320x568, 360x640, 375x667, 390x844, 412x915, tablets and landscape: no element extends past the screen.

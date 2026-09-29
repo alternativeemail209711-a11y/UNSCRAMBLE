@@ -39,8 +39,8 @@ const WDEF = {
 const TDEF = { tYarn: true, tFont: 'same', tWt: '700', tFs: 64, tTxt: '', tBg1: '', tBg2: '', tEdge: '', tOk1: '', tOk2: '', tOp: 100, tBw: 7, tGap: 8, tGloss: false, tShadow: true, tBob: true };
 const DEFAULTS = { theme: DEFAULT_THEME, font: 'cute', titleFont: 'fredoka', toolbar: TB_DEFAULT, fontScale: 100, tileShape: 'rounded', tileScale: 100, title: 'WORD SHUFFLE', cTitle: '',
   footer: 'Type the correct word(s) in the chat to win!', reduceMotion: false, showTitle: true, showCategory: true, showTimer: true,
-  showHint: true, showPopup: true, showLb: true, showFeed: true, showFooter: true, feedSecs: 3, lbRows: 5,
-  z1: 9, zg: 8, z2: 34, z4: 14, sound: false, volume: 60, playerName: 'Me', cBg1: '', cBg2: '', cA1: '', cA2: '', cTxt: '', liveAsk: true, showNext: true, showChat: true, chatW: 50, ...WDEF, ...TDEF };
+  showHint: true, showPopup: true, showLb: true, showFeed: true, showFooter: true, feedSecs: 3, lbRows: 3, chatRows: 4,
+  z1: 9, zg: 8, z2: 27, z4: 12, sound: false, volume: 60, playerName: 'Me', cBg1: '', cBg2: '', cA1: '', cA2: '', cTxt: '', liveAsk: true, showNext: true, showChat: true, ...WDEF, ...TDEF };
 const MODES = {
   test: ['🧪', 'TEST', 'Test mode', 'Try games & upgrades. TikTok chat is OFF. Use the guess box, ✅ (solve), 💬 (fake chat) and 🤖 (auto-guessing bot).'],
   live: ['🔴', 'LIVE', 'Live mode', 'Go live on TikTok. Reads the TikTok chat. Guess box is hidden.'],
@@ -48,7 +48,7 @@ const MODES = {
 };
 const TT_TEXT = { off: '', nouser: '⚠️ No TikTok username yet - open ⚙️ → 🔴 Live and type it in', connecting: '⏳ Connecting to TikTok…', connected: '✅ Connected to TikTok chat', retrying: '⏳ Not live yet - retrying every 15s' };
 // One-time upgrade: older saved layouts (3 leaderboard rows, old zone heights, 'UNSCRAMBLE LIVE') are replaced by the new layout.
-const LAYOUT_V = '4', OLD_KEYS = ['z1', 'zg', 'z2', 'z4', 'lbRows', 'feedLines'];
+const LAYOUT_V = '5', OLD_KEYS = ['z1', 'zg', 'z2', 'z4', 'lbRows', 'feedLines'];
 const KNIT_KEYS = ['titleFont', 'tOk1', 'tOk2', 'tBg1', 'tBg2', 'tEdge', 'tTxt', 'cBg1', 'cBg2', 'cA1', 'cA2', 'cTxt', 'cTitle', 'lTitle'];   // old colours/fonts are dropped once, so the knitting look shows up
 const cleanOld = o => { const c = { ...o }; OLD_KEYS.forEach(k => delete c[k]); if (c.title === 'UNSCRAMBLE LIVE') delete c.title; return c; };
 const readSaved = key => {
@@ -59,7 +59,7 @@ const readSaved = key => {
     const kv = localStorage.getItem('ws-knit-v');
     if (!kv) { o = { ...o }; KNIT_KEYS.forEach(k => delete o[k]); }                       // first time: old colours/fonts are dropped so the knitting look shows
     else if (kv === '1' && KNIT_RENAME[o.theme]) o = { ...o, theme: KNIT_RENAME[o.theme] };   // 2nd version: wool themes were renamed knit_...
-    if (kv !== '3') { o = { ...o }; delete o.chatW; }                                          // 3rd version: new chat/leaderboard layout uses the new default width
+    delete o.chatW;   // (old side-by-side width setting no longer exists)
   } catch { /* ignore */ }
   return o;
 };
@@ -85,12 +85,12 @@ const FIELDS = {
     { k: 'playerName', l: 'My name (Test / Offline guesses)', t: 'text' },
     tg('reduceMotion', 'Reduce animations'),
     { k: 'cBg1', l: 'Background colour 1 (Reset = theme)', t: 'color' }, { k: 'cBg2', l: 'Background colour 2', t: 'color' }, { k: 'cA1', l: 'Accent colour 1 (banners, buttons)', t: 'color' }, { k: 'cA2', l: 'Accent colour 2', t: 'color' }, { k: 'cTxt', l: 'Text colour', t: 'color' }, { k: 'cTitle', l: 'Game name colour (Reset = theme text colour)', t: 'color' },
-    tg('showNext', 'Show "next round in N seconds" countdown after each round'), tg('showChat', 'Show live chat beside the leaderboard'), rg('chatW', 'Live chat width', 30, 65, 1, '%'),
+    tg('showNext', 'Show "next round in N seconds" countdown after each round'), tg('showChat', 'Show live chat (below the leaderboard)'),
     tg('liveAsk', 'Show the TikTok login window when switching to Live')],
   layout: [
     tg('showTitle', 'Show title'), tg('showCategory', 'Show category banner'), tg('showTimer', 'Show timer'), tg('showHint', 'Show hint letters'),
-    tg('showFeed', 'Show guess window (one guess at a time, under the category)'), tg('showPopup', 'Show winner window in the centre'), tg('showLb', 'Show mini leaderboard (bottom)'), tg('showFooter', 'Show footer'),
-    rg('feedSecs', 'Guess window stays for', 1, 10, 1, 's'), rg('lbRows', 'Mini leaderboard rows (top)', 1, 8),
+    tg('showFeed', 'Show guess window (one guess at a time, under the category)'), tg('showPopup', 'Show winner window in the centre'), tg('showLb', 'Show mini leaderboard (above the live chat)'), tg('showFooter', 'Show footer'),
+    rg('feedSecs', 'Guess window stays for', 1, 10, 1, 's'), rg('lbRows', 'Leaderboard rows (top players)', 1, 8), rg('chatRows', 'Live chat rows (latest messages)', 1, 8),
     rg('z1', 'Category height', 6, 20, 1, '%'), rg('zg', 'Guess window height', 6, 20, 1, '%'), rg('z2', 'Puzzle height', 20, 50, 1, '%'), rg('z4', 'Footer height', 8, 25, 1, '%'),
     tg('sound', 'Sound effects'), rg('volume', 'Volume', 0, 100, 5, '%')],
   game: [
@@ -154,7 +154,7 @@ const winKeys = p => Object.keys(WDEF).filter(k => k[0] === p);
 
 // ---- TOOLBAR REGISTRY: every toggle / slider / dropdown / text setting can be pinned to the top toolbar as a button.
 const ICONS = { font: '🔤', fontScale: '🔠', tileShape: '🔷', tileScale: '🔳', title: '✏️', footer: '📝', playerName: '👤', reduceMotion: '🐢', showTitle: '🏷️', showCategory: '📂',
-  showTimer: '⏱️', showHint: '🔎', showFeed: '💬', showPopup: '🏆', showLb: '📊', showFooter: '📄', feedSecs: '⏳', lbRows: '🔢', z1: '📏', zg: '📏', z2: '📏', z4: '📏', volume: '🔊',
+  showTimer: '⏱️', showHint: '🔎', showFeed: '💬', showPopup: '🏆', showLb: '📊', showFooter: '📄', feedSecs: '⏳', lbRows: '🔢', chatRows: '💬', z1: '📏', zg: '📏', z2: '📏', z4: '📏', volume: '🔊',
   roundSeconds: '⏲️', popupSecs: '🕒', showLbOverlay: '🥇', lbSecs: '🕓', showAnswer: '⌛', revealSeconds: '🕰️', minLetters: '🔽', maxLetters: '🔼', allowMulti: '🔀',
   spaceless: '⎵', hints: '🪡', hintStart: '🚦', hintEvery: '🔁', maxHints: '🔟', botOn: '🤖', botEvery: '⏩', botSkill: '🎯', titleFont: '🅰️' };
 const SKIP = new Set(['theme', 'sound', 'showAnswerWin']);   // these already have their own built-in buttons
@@ -470,9 +470,14 @@ export default function App() {
   const CQ = (177.78 - bl.H) / 100;   // stage height under the toolbar in cqw per 1%
   const gwH = zg * CQ - 2, gh = Math.min(11, Math.max(4, gwH - 2.4));   // guess window = exactly ONE line
   // Mini leaderboard: row height is calculated from the room the zone really has, so rows shrink to fit and can never spill into the footer.
-  const availLb = z3 * CQ - 2, nRows = Math.max(1, Math.min(L.lbRows, Math.floor(availLb / 5.5)));
-  const lh = Math.min(10, availLb / nRows) - 1;
-  const style = { ...themeVars(L), ...rowVars(L, theme), ...tileVars(L), ...(L.cTitle && { '--tcol': L.cTitle }), '--fs': L.fontScale / 100, '--ff': FONTS[L.font][1], '--tw': L.titleFont === 'fredoka' ? 700 : 400, '--tf': (TFONTS[L.titleFont] || TFONTS.lilita)[1] === 'inherit' ? FONTS[L.font][1] : (TFONTS[L.titleFont] || TFONTS.lilita)[1], '--tr': RADIUS[L.tileShape], '--lh': lh, '--barH': bl.H, gridTemplateRows: `auto minmax(0,${z1}fr) minmax(0,${zg}fr) minmax(0,${z2}fr) minmax(0,${z3}fr) minmax(0,${z4}fr)` };
+  // STACKED layout: leaderboard on top, live chat underneath, both full width. Row height is worked out from the room the zone really has;
+  // if the rows would get too small, the row counts are reduced automatically (chat first) so nothing ever spills into the footer.
+  const availLb = z3 * CQ - 2, HEADH = 4.6, GAPH = 1.2;
+  let nL = Math.max(1, L.lbRows || 3), nC = L.showChat ? Math.max(1, L.chatRows || 4) : 0;
+  const rowArea = availLb - HEADH * (L.showChat ? 2 : 1) - (L.showChat ? GAPH : 0), hOf = () => rowArea / (nL + nC) - 1;
+  while (hOf() < 5.4 && nL + nC > 2) { if (nC >= nL && nC > 1) nC--; else if (nL > 1) nL--; else break; }
+  const lh = Math.max(3.6, Math.min(9, hOf()));
+  const style = { ...themeVars(L), ...rowVars(L, theme), ...tileVars(L), ...(L.cTitle && { '--tcol': L.cTitle }), '--fs': L.fontScale / 100, '--ff': FONTS[L.font][1], '--tw': L.titleFont === 'fredoka' ? 700 : 400, '--tf': (TFONTS[L.titleFont] || TFONTS.lilita)[1] === 'inherit' ? FONTS[L.font][1] : (TFONTS[L.titleFont] || TFONTS.lilita)[1], '--tr': RADIUS[L.tileShape], '--lh': lh, '--nl': nL, '--nc': nC, '--barH': bl.H, gridTemplateRows: `auto minmax(0,${z1}fr) minmax(0,${zg}fr) minmax(0,${z2}fr) minmax(0,${z3}fr) minmax(0,${z4}fr)` };
   const hid = on => (on ? '' : ' hid');
   const fval = it => (it.src === 'cfg' ? cfg?.[it.f.k] : L[it.f.k]);
   const fset = (it, v) => { if (it.src === 'cfg') { setCfg(c => ({ ...c, [it.f.k]: v })); admin('set', { patch: { [it.f.k]: v } }); } else setLocal(it.f.k, v); };
@@ -499,7 +504,7 @@ export default function App() {
       default: return null;
     }
   };
-  const rows = s.leaderboard.slice(0, nRows);   // only real winners - no empty placeholder rows
+  const rows = s.leaderboard.slice(0, nL);   // only real winners - no empty placeholder rows
   const won = reveal && s.winnerInfo;
   const stage = won ? (s.lbSecs > 0 && s.full?.length && left <= s.lbSecs ? 'lb' : 'pop') : null;   // winner window first, full leaderboard for the last lbSecs
 
@@ -575,28 +580,34 @@ export default function App() {
         </div>
       </section>
 
-      {/* ZONE 3 - mini leaderboard */}
-      <section className={'z z3' + (L.showChat ? ' split' : '')} style={{ '--lw': 100 - L.chatW + 'fr', '--cw': L.chatW + 'fr' }}>
-        <div className={'lb' + hid(L.showLb)}>
-          {rows.length === 0 && <div className="chempty">🧶 Winners appear here</div>}
-          {rows.map((p, i) => (
-            <div className="lbrow" key={p.user}>
-              <span className="rk">{i < 3 ? MEDALS[i] : i + 1}</span>
-              <Avatar pic={p.pic} name={p.user} size="calc(var(--lh)*.82cqw)" />
-              <div className="who"><b>@{p.user}</b></div>
-              <span className="pts">{p.score}</span>
-            </div>
-          ))}
-        </div>
-        {L.showChat && (
-          <div className="chat">
-            {chat.length === 0 && <div className="chempty">💬 Live chat</div>}
-            {chat.slice(-nRows).map(m => (
-              <div className={'chrow' + (m.ok ? ' ok' : '')} key={m.id}>
-                <Avatar pic={m.pic} name={m.user} size="calc(var(--lh)*.78cqw)" />
-                <div className="cbody"><span className="cn">@{m.user}</span><span className="ctx">{m.ok ? '✅ ' : ''}{m.text}</span></div>
+      {/* ZONE 3 - leaderboard (top) and live chat (below), stacked, full width */}
+      <section className="z z3 stack">
+        <div className={'sec3' + hid(L.showLb)}>
+          <div className="sh">{L.lTitle || '🧶 Leaderboard'}</div>
+          <div className="lb">
+            {rows.length === 0 && <div className="chempty">🧶 Winners appear here</div>}
+            {rows.map((p, i) => (
+              <div className="lbrow" key={p.user}>
+                <span className="rk">{i < 3 ? MEDALS[i] : i + 1}</span>
+                <Avatar pic={p.pic} name={p.user} size="calc(var(--lh)*.82cqw)" />
+                <div className="who"><b>@{p.user}</b></div>
+                <span className="pts">{p.score}</span>
               </div>
             ))}
+          </div>
+        </div>
+        {L.showChat && (
+          <div className="sec3">
+            <div className="sh">💬 Live chat</div>
+            <div className="chat">
+              {chat.length === 0 && <div className="chempty">💬 Chat messages appear here</div>}
+              {chat.slice(-nC).map(m => (
+                <div className={'chrow' + (m.ok ? ' ok' : '')} key={m.id}>
+                  <Avatar pic={m.pic} name={m.user} size="calc(var(--lh)*.8cqw)" />
+                  <span className="ctx"><b>@{m.user}</b> {m.ok ? '✅ ' : ''}{m.text}</span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </section>

@@ -327,3 +327,22 @@ html.plainBg{background-image:linear-gradient(160deg,var(--bg1),var(--bg2));back
 /* empty states */
 .chempty{margin:auto;padding:1.6cqw 4cqw;border-radius:99px;background:var(--rowbg,rgba(255,255,255,.94));color:var(--rowtx,var(--text));border:.4cqw dashed var(--te);font-weight:800;font-size:3.6cqw;opacity:.85;white-space:nowrap}
 .z3.split .lb .chempty{font-size:3.3cqw;padding:1.4cqw 3cqw}
+
+/* =====================================================================
+   STACKED LAYOUT: leaderboard (top) + live chat (below), each full width
+   ===================================================================== */
+.z3.stack{display:flex;flex-direction:column;justify-content:flex-start;gap:1.2cqw;padding-top:.5cqw}
+.sec3{flex:none;display:flex;flex-direction:column;gap:.6cqw;min-width:0}
+.sh{flex:none;height:4cqw;display:flex;align-items:center;gap:1.5cqw;font-size:calc(3.3cqw*var(--fs));font-weight:800;letter-spacing:.05em;color:var(--text);padding:0 1cqw}
+.sh::after{content:'';flex:1;height:0;border-top:.45cqw dashed var(--te);opacity:.8}
+.z3.stack .lb{flex:none;height:calc(var(--nl)*(var(--lh)*1cqw + 1cqw));gap:1cqw}
+.z3.stack .chat{flex:none;height:calc(var(--nc)*(var(--lh)*1cqw + 1cqw));gap:1cqw}
+.z3.stack .lbrow,.z3.stack .chrow{padding:0 2cqw 0 1cqw;gap:1.6cqw}
+.z3.stack .lbrow .rk{width:6.5cqw;font-size:calc(var(--lh)*.56cqw)}
+.z3.stack .lbrow .who b{font-size:calc(var(--lh)*.5cqw*var(--fs))}
+.z3.stack .lbrow .pts{min-width:calc(var(--lh)*1cqw);height:calc(var(--lh)*.72cqw);padding:0 2.2cqw;font-size:calc(var(--lh)*.5cqw*var(--fs))}
+/* live chat rows are one readable line again: bold @name, then the message */
+.z3.stack .chrow .ctx{flex:1;min-width:0;font-size:calc(var(--lh)*.5cqw*var(--fs));font-weight:700}
+.z3.stack .chrow .ctx b{color:var(--link);font-weight:800}
+.chrow.ok .ctx b{color:#fff}
+.z3.stack .chempty{margin:auto;font-size:3.6cqw}

@@ -26,8 +26,9 @@ The whole game now wears the same knitting look as your platform:
  - Yarn-ball icon on the browser tab
 
 You do NOT need to change anything in the code.
+The footer text is empty by default (you can type your own in Settings > Footer text).
 Letter boxes are flat yarn colour: the shiny highlight was removed.
-Chat and leaderboard are now stacked, full width: LEADERBOARD on top, LIVE CHAT below, each with a small heading. Rows are solid, high-contrast cards (medal, picture, name and a coloured score badge; chat shows @name then the message). In Settings > Layout you can change how many leaderboard rows and live chat rows show.
+Chat and leaderboard are now stacked, full width: LEADERBOARD on top, LIVE CHAT below. Rows are solid, high-contrast cards (medal, picture, name and a coloured score badge; chat shows @name then the message). In Settings > Layout you can change how many leaderboard rows and live chat rows show.
 
 
 HOW TO DEPLOY (same way as before)

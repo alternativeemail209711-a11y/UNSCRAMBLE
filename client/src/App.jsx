@@ -38,7 +38,7 @@ const WDEF = {
 // Puzzle letter boxes (t = tile)
 const TDEF = { tYarn: true, tFont: 'same', tWt: '700', tFs: 64, tTxt: '', tBg1: '', tBg2: '', tEdge: '', tOk1: '', tOk2: '', tOp: 100, tBw: 7, tGap: 8, tGloss: false, tShadow: true, tBob: true };
 const DEFAULTS = { theme: DEFAULT_THEME, font: 'cute', titleFont: 'fredoka', toolbar: TB_DEFAULT, fontScale: 100, tileShape: 'rounded', tileScale: 100, title: 'WORD SHUFFLE', cTitle: '',
-  footer: 'Type the correct word(s) in the chat to win!', reduceMotion: false, showTitle: true, showCategory: true, showTimer: true,
+  footer: '', reduceMotion: false, showTitle: true, showCategory: true, showTimer: true,
   showHint: true, showPopup: true, showLb: true, showFeed: true, showFooter: true, feedSecs: 3, lbRows: 3, chatRows: 4,
   z1: 9, zg: 8, z2: 27, z4: 12, sound: false, volume: 60, playerName: 'Me', cBg1: '', cBg2: '', cA1: '', cA2: '', cTxt: '', liveAsk: true, showNext: true, showChat: true, ...WDEF, ...TDEF };
 const MODES = {
@@ -60,6 +60,7 @@ const readSaved = key => {
     if (!kv) { o = { ...o }; KNIT_KEYS.forEach(k => delete o[k]); }                       // first time: old colours/fonts are dropped so the knitting look shows
     else if (kv === '1' && KNIT_RENAME[o.theme]) o = { ...o, theme: KNIT_RENAME[o.theme] };   // 2nd version: wool themes were renamed knit_...
     delete o.chatW;   // (old side-by-side width setting no longer exists)
+    if (o.footer === 'Type the correct word(s) in the chat to win!') delete o.footer;   // the old default footer sentence is cleared (footer is empty by default now)
   } catch { /* ignore */ }
   return o;
 };
@@ -472,7 +473,7 @@ export default function App() {
   // Mini leaderboard: row height is calculated from the room the zone really has, so rows shrink to fit and can never spill into the footer.
   // STACKED layout: leaderboard on top, live chat underneath, both full width. Row height is worked out from the room the zone really has;
   // if the rows would get too small, the row counts are reduced automatically (chat first) so nothing ever spills into the footer.
-  const availLb = z3 * CQ - 2, HEADH = 4.6, GAPH = 1.2;
+  const availLb = z3 * CQ - 2, HEADH = 0, GAPH = 1.2;   // no section headings any more
   let nL = Math.max(1, L.lbRows || 3), nC = L.showChat ? Math.max(1, L.chatRows || 4) : 0;
   const rowArea = availLb - HEADH * (L.showChat ? 2 : 1) - (L.showChat ? GAPH : 0), hOf = () => rowArea / (nL + nC) - 1;
   while (hOf() < 5.4 && nL + nC > 2) { if (nC >= nL && nC > 1) nC--; else if (nL > 1) nL--; else break; }
@@ -583,7 +584,6 @@ export default function App() {
       {/* ZONE 3 - leaderboard (top) and live chat (below), stacked, full width */}
       <section className="z z3 stack">
         <div className={'sec3' + hid(L.showLb)}>
-          <div className="sh">{L.lTitle || '🧶 Leaderboard'}</div>
           <div className="lb">
             {rows.length === 0 && <div className="chempty">🧶 Winners appear here</div>}
             {rows.map((p, i) => (
@@ -598,7 +598,6 @@ export default function App() {
         </div>
         {L.showChat && (
           <div className="sec3">
-            <div className="sh">💬 Live chat</div>
             <div className="chat">
               {chat.length === 0 && <div className="chempty">💬 Chat messages appear here</div>}
               {chat.slice(-nC).map(m => (

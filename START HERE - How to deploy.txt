@@ -26,6 +26,7 @@ The whole game now wears the same knitting look as your platform:
  - Yarn-ball icon on the browser tab
 
 You do NOT need to change anything in the code.
+Letter boxes are flat yarn colour: the shiny highlight was removed.
 
 
 HOW TO DEPLOY (same way as before)

@@ -294,3 +294,10 @@ html.plainBg{background-image:linear-gradient(160deg,var(--bg1),var(--bg2));back
 .stage.plain::before{display:none}
 .menu .mh{margin:1.5cqw 2cqw .5cqw;font-size:3cqw;font-weight:800;opacity:.75;letter-spacing:.04em}
 .menu .mh:first-child{margin-top:.5cqw}
+
+/* NO SHINE on the puzzle letters: flat yarn colour, no white highlight spot or streak */
+.tile::after{display:none!important}
+.tile{background:linear-gradient(var(--tb1,var(--t1)),var(--tb2,var(--t2)))!important;text-shadow:0 calc(var(--t)*.03) 0 rgba(60,35,10,.25)}
+.tile.ok{background:linear-gradient(var(--tok1,#C6E8B4),var(--tok2,#7DBB68))!important}
+.yarnTiles .tile{text-shadow:0 calc(var(--t)*.045) 0 rgba(60,35,10,.55)}
+.yarnTiles .tile.ok{text-shadow:none}

@@ -36,7 +36,7 @@ const WDEF = {
   lTop: 0, lVis: 0, lW: 100, lSc: 100, lX: 0, lY: 0, lOp: 100, lBg: '', lBgOp: 100, lRk: true, lAv: true, lNm: true, lPt: true, lHead: true, lTitle: '🧶 Leaderboard', lDim: true
 };
 // Puzzle letter boxes (t = tile)
-const TDEF = { tYarn: true, tFont: 'same', tWt: '700', tFs: 64, tTxt: '', tBg1: '', tBg2: '', tEdge: '', tOk1: '', tOk2: '', tOp: 100, tBw: 7, tGap: 8, tGloss: true, tShadow: true, tBob: true };
+const TDEF = { tYarn: true, tFont: 'same', tWt: '700', tFs: 64, tTxt: '', tBg1: '', tBg2: '', tEdge: '', tOk1: '', tOk2: '', tOp: 100, tBw: 7, tGap: 8, tGloss: false, tShadow: true, tBob: true };
 const DEFAULTS = { theme: DEFAULT_THEME, font: 'cute', titleFont: 'fredoka', toolbar: TB_DEFAULT, fontScale: 100, tileShape: 'rounded', tileScale: 100, title: 'WORD SHUFFLE', cTitle: '',
   footer: 'Type the correct word(s) in the chat to win!', reduceMotion: false, showTitle: true, showCategory: true, showTimer: true,
   showHint: true, showPopup: true, showLb: true, showFeed: true, showFooter: true, feedSecs: 3, lbRows: 5,
@@ -127,17 +127,17 @@ const TILE_F = [
   clrF('tTxt', 'Letter colour (Reset = theme)'), clrF('tBg1', 'Box colour - top (Reset = theme)'), clrF('tBg2', 'Box colour - bottom (same as top = solid)'), clrF('tEdge', 'Border colour'),
   rg('tOp', 'Box opacity (letters stay solid)', 0, 100, 5, '%'), rg('tBw', 'Border thickness', 0, 15, 1, '%'), rg('tGap', 'Space between boxes', 0, 40, 1, '%'),
   clrF('tOk1', 'Solved colour - top (when the word is revealed)'), clrF('tOk2', 'Solved colour - bottom'),
-  tg('tYarn', 'Multicolour yarn boxes (Off = one plain wool colour)'), tg('tGloss', 'Glossy highlight'), tg('tShadow', 'Drop shadow'), tg('tBob', 'Bouncing / wobble animation')];
+  tg('tYarn', 'Multicolour yarn boxes (Off = one plain wool colour)'), tg('tShadow', 'Drop shadow'), tg('tBob', 'Bouncing / wobble animation')];
 
 // CSS variables for the letter boxes and for the floating windows
 const mixc = (c, p) => (p >= 100 ? c : `color-mix(in srgb, ${c} ${p}%, transparent)`);
 const tileVars = l => {
   const o = l.tOp ?? 100, v = {
     '--tb1': mixc(l.tBg1 || 'var(--t1)', o), '--tb2': mixc(l.tBg2 || 'var(--t2)', o), '--tbe': mixc(l.tEdge || 'var(--te)', o), '--tok1': mixc(l.tOk1 || '#C6E8B4', o), '--tok2': mixc(l.tOk2 || '#7DBB68', o),
-    '--tbw': (l.tBw ?? 7) / 100, '--tfs': (l.tFs ?? 64) / 100, '--tfw': l.tWt || '700', '--tgap': (l.tGap ?? 8) / 100, '--hl': l.tGloss === false ? 'none' : 'block' };
+    '--tbw': (l.tBw ?? 7) / 100, '--tfs': (l.tFs ?? 64) / 100, '--tfw': l.tWt || '700', '--tgap': (l.tGap ?? 8) / 100, '--hl': 'none' };
   if (l.tTxt) v['--ttx'] = l.tTxt;
   const ff = (TILEF[l.tFont] || [])[1]; if (ff && ff !== 'inherit') v['--tff'] = ff;
-  if (l.tGloss === false) v['--tgl'] = 'linear-gradient(#0000,#0000)';
+  v['--tgl'] = 'linear-gradient(#0000,#0000)';   // no shiny highlight on the letter boxes
   return v;
 };
 const yarnOn = l => l.tYarn !== false && !l.tBg1 && !l.tBg2;   // multicolour yarn letter boxes (only while no custom box colour is chosen)

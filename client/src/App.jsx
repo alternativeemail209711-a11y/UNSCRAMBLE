@@ -17,14 +17,14 @@ const TFONTS = {   // game-name fonts (Google Fonts, with safe fallbacks)
   bungee: ['Bungee (arcade)', "'Bungee','Lilita One',Impact,sans-serif"], luckiest: ['Luckiest Guy (comic)', "'Luckiest Guy','Lilita One',Impact,sans-serif"],
   baloo: ['Baloo 2 (round)', "'Baloo 2','Fredoka',sans-serif"], same: ['Same as text font', 'inherit']
 };
-const DEFAULTS = { theme: 'cotton', font: 'cute', titleFont: 'lilita', toolbar: TB_DEFAULT, fontScale: 100, tileShape: 'rounded', tileScale: 100, title: 'UNSCRAMBLE',
-  footer: 'Type the correct word(s) in the chat to win!', reduceMotion: false, showTitle: true, showCategory: true, showTimer: true,
-  showHint: true, showPopup: true, showLb: true, showFeed: true, showFooter: true, feedSecs: 3, lbRows: 5,
-  z1: 9, zg: 9, z2: 40, z4: 13, sound: false, volume: 60, playerName: 'Me' };
 // Buttons that can appear on the top toolbar (settings ⚙️ is always there so you can never lock yourself out)
 const TB = [['mode', '🧪', 'Mode (Test / Live / Solo)'], ['theme', '🎨', 'Theme'], ['pause', '⏸️', 'Pause / Resume'], ['skip', '⏭️', 'Skip round'], ['hint', '💡', 'Hint now'],
   ['time', '⏰', 'Add 15 seconds'], ['cats', '🗂️', 'Categories'], ['answer', '👁️', 'Show / hide correct answer'], ['sound', '🔔', 'Sound on / off'], ['full', '⛶', 'Full screen']];
 const TB_DEFAULT = ['mode', 'theme', 'pause', 'skip', 'hint', 'time', 'full'];
+const DEFAULTS = { theme: 'cotton', font: 'cute', titleFont: 'lilita', toolbar: TB_DEFAULT, fontScale: 100, tileShape: 'rounded', tileScale: 100, title: 'UNSCRAMBLE',
+  footer: 'Type the correct word(s) in the chat to win!', reduceMotion: false, showTitle: true, showCategory: true, showTimer: true,
+  showHint: true, showPopup: true, showLb: true, showFeed: true, showFooter: true, feedSecs: 3, lbRows: 5,
+  z1: 9, zg: 9, z2: 40, z4: 13, sound: false, volume: 60, playerName: 'Me' };
 const MODES = {
   test: ['🧪', 'TEST', 'Test mode', 'Try games & upgrades. TikTok chat is OFF. Use the guess box, ✅ (solve), 💬 (fake chat) and 🤖 (auto-guessing bot).'],
   live: ['🔴', 'LIVE', 'Live mode', 'Go live on TikTok. Reads the TikTok chat. Guess box is hidden.'],

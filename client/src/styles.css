@@ -171,3 +171,16 @@ h1{flex:none;max-width:100%;font-size:calc(7.4cqw*var(--fs));line-height:1.15;fo
 .livecard .err{text-align:center;color:var(--gold)}
 .clr{display:flex;gap:8px;align-items:center}.clr input{width:48px;height:32px;padding:0;border:0;background:none}.clr button{padding:6px 10px;border-radius:8px;border:1px solid var(--te);background:var(--panel);color:var(--text);cursor:pointer}
 textarea{width:100%;padding:8px;border-radius:8px;border:1px solid var(--te);background:var(--bg1);color:var(--text);font:inherit;resize:vertical}
+
+/* zone 3: leaderboard | live chat side by side */
+.z3.split{display:grid;grid-template-columns:minmax(0,var(--lw)) minmax(0,var(--cw));column-gap:2cqw;align-items:stretch}
+.z3.split .lbrow{gap:1cqw;padding:0 1.5cqw 0 .8cqw;min-width:0}
+.chat{min-width:0;min-height:0;display:flex;flex-direction:column;gap:1cqw;overflow:hidden}
+.chrow{flex:0 0 calc(var(--lh)*1cqw);min-width:0;display:flex;align-items:center;gap:1.2cqw;padding:0 2cqw 0 .8cqw;border-radius:99px;background:var(--panel);border:.4cqw solid #fff8;overflow:hidden;animation:in-up .25s both}
+.chrow.ok{background:var(--a1);color:var(--bt)}
+.ctx{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:calc(var(--lh)*.4cqw*var(--fs));font-weight:700}
+.chempty{margin:auto;opacity:.6;font-weight:800;font-size:4cqw}
+.lbrow .who b{display:block}
+/* next-round countdown (lives in the footer row, so it never overlaps anything) */
+.nextin{flex:none;display:flex;align-items:baseline;justify-content:center;gap:2cqw;padding:.3cqw 4cqw;border-radius:99px;background:linear-gradient(90deg,var(--a1),var(--a2));color:var(--bt);border:.5cqw solid #fff9;box-shadow:0 .6cqw 0 #0002;font-weight:800;white-space:nowrap}
+.nextin small{font-size:calc(3.2cqw*var(--fs))}.nextin b{font-size:calc(6.5cqw*var(--fs));line-height:1;animation:pop .4s both}

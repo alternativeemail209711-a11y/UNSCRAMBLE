@@ -86,3 +86,8 @@ Puzzle letters and the timer sit higher on the screen, giving the bottom leaderb
 
 ## Phone-fit fix (root cause)
 The stage grid had no explicit column, so the toolbar could widen the whole layout beyond the phone screen. The stage now has a fixed single column (`grid-template-columns:minmax(0,1fr)`) and the toolbar is clipped to it. Verified in a mobile-browser emulator on 320x568, 360x640, 375x667, 390x844, 412x915, tablets and landscape: no element extends past the screen.
+
+## Round countdown, live chat, manual leaderboard
+- **Next-round countdown**: after every round ends, the footer shows "NEXT ROUND IN N seconds" (Layout tab -> toggle). It sits in the footer row, so it never covers anything.
+- **Leaderboard + live chat side by side** at the bottom (top-N leaderboard on the left, latest chat/guesses on the right). Layout tab: show/hide chat and "Live chat width" (30-65%). They are separate grid columns, so they cannot overlap.
+- **Manual leaderboard**: the new 🏆 toolbar button shows the full leaderboard for the "Full leaderboard duration" (Game tab); press again to hide. If you saved a custom toolbar earlier, tick "Show / hide leaderboard now" in Settings -> Toolbar to add it.

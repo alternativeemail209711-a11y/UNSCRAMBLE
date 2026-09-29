@@ -318,6 +318,7 @@ io.on('connection', socket => {
         if (words.length) custom[name] = words; else delete custom[name];
         persist(CUFILE, custom); applyCustom(); io.emit('settings', pub()); return done({ ok: true, count: words.length });
       }
+      case 'showLb': io.emit('mlb', { rows: everyone(), secs: cfg.lbSecs }); break;
       case 'mode': setMode(m.mode); break;
       case 'tiktok': {   // username + Euler key typed on screen (settings -> Live tab)
         const next = { ...ttSaved };

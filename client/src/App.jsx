@@ -19,12 +19,12 @@ const TFONTS = {   // game-name fonts (Google Fonts, with safe fallbacks)
 };
 // Buttons that can appear on the top toolbar (settings ⚙️ is always there so you can never lock yourself out)
 const TB = [['mode', '🧪', 'Mode (Test / Live / Solo)'], ['theme', '🎨', 'Theme'], ['pause', '⏸️', 'Pause / Resume'], ['skip', '⏭️', 'Skip round'], ['hint', '💡', 'Hint now'],
-  ['time', '⏰', 'Add 15 seconds'], ['cats', '🗂️', 'Categories'], ['answer', '👁️', 'Show / hide correct answer'], ['sound', '🔔', 'Sound on / off'], ['full', '⛶', 'Full screen'], ['resetlb', '🧹', 'Reset leaderboard']];
-const TB_DEFAULT = ['mode', 'theme', 'pause', 'skip', 'hint', 'time', 'full'];
+  ['time', '⏰', 'Add 15 seconds'], ['cats', '🗂️', 'Categories'], ['answer', '👁️', 'Show / hide correct answer'], ['sound', '🔔', 'Sound on / off'], ['full', '⛶', 'Full screen'], ['lb', '🏆', 'Show / hide leaderboard now'], ['resetlb', '🧹', 'Reset leaderboard']];
+const TB_DEFAULT = ['mode', 'theme', 'pause', 'skip', 'hint', 'lb', 'full'];
 const DEFAULTS = { theme: 'cotton', font: 'cute', titleFont: 'lilita', toolbar: TB_DEFAULT, fontScale: 100, tileShape: 'rounded', tileScale: 100, title: 'UNSCRAMBLE',
   footer: 'Type the correct word(s) in the chat to win!', reduceMotion: false, showTitle: true, showCategory: true, showTimer: true,
   showHint: true, showPopup: true, showLb: true, showFeed: true, showFooter: true, feedSecs: 3, lbRows: 5,
-  z1: 9, zg: 8, z2: 34, z4: 14, sound: false, volume: 60, playerName: 'Me', cBg1: '', cBg2: '', cA1: '', cA2: '', cTxt: '', liveAsk: true };
+  z1: 9, zg: 8, z2: 34, z4: 14, sound: false, volume: 60, playerName: 'Me', cBg1: '', cBg2: '', cA1: '', cA2: '', cTxt: '', liveAsk: true, showNext: true, showChat: true, chatW: 48 };
 const MODES = {
   test: ['🧪', 'TEST', 'Test mode', 'Try games & upgrades. TikTok chat is OFF. Use the guess box, ✅ (solve), 💬 (fake chat) and 🤖 (auto-guessing bot).'],
   live: ['🔴', 'LIVE', 'Live mode', 'Go live on TikTok. Reads the TikTok chat. Guess box is hidden.'],
@@ -55,6 +55,7 @@ const FIELDS = {
     { k: 'playerName', l: 'My name (Test / Offline guesses)', t: 'text' },
     tg('reduceMotion', 'Reduce animations'),
     { k: 'cBg1', l: 'Background colour 1 (Reset = theme)', t: 'color' }, { k: 'cBg2', l: 'Background colour 2', t: 'color' }, { k: 'cA1', l: 'Accent colour 1 (banners, buttons)', t: 'color' }, { k: 'cA2', l: 'Accent colour 2', t: 'color' }, { k: 'cTxt', l: 'Text colour', t: 'color' },
+    tg('showNext', 'Show "next round in N seconds" countdown after each round'), tg('showChat', 'Show live chat beside the leaderboard'), rg('chatW', 'Live chat width', 30, 65, 1, '%'),
     tg('liveAsk', 'Show the TikTok login window when switching to Live')],
   layout: [
     tg('showTitle', 'Show title'), tg('showCategory', 'Show category banner'), tg('showTimer', 'Show timer'), tg('showHint', 'Show hint letters'),
@@ -232,7 +233,7 @@ export default function App() {
   const [menu, setMenu] = useState(false), [mmenu, setMmenu] = useState(false), [panel, setPanel] = useState(null), [pop, setPop] = useState(null);
   const [pm, setPm] = useState('test'), [tt, setTt] = useState({ status: 'off', user: '' }), [fb, setFb] = useState('');
   const [ttUser, setTtUser] = useState(''), [ttKey, setTtKey] = useState(''), [ttMsg, setTtMsg] = useState('');
-  const [livePop, setLivePop] = useState(false), [custom, setCustom] = useState({}), [mineName, setMineName] = useState(''), [mineText, setMineText] = useState('');
+  const [livePop, setLivePop] = useState(false), [chat, setChat] = useState([]), [mlb, setMlb] = useState(null), mlbOn = useRef(false), [custom, setCustom] = useState({}), [mineName, setMineName] = useState(''), [mineText, setMineText] = useState('');
   const gref = useRef(null);
   const [pin, setPin] = useState(() => localStorage.getItem('ul-pin') || ''), [msg, setMsg] = useState('');
   const deadline = useRef(0);
@@ -245,15 +246,21 @@ export default function App() {
       g.shownAt = Date.now(); setGw(m);
       clearTimeout(g.hide); g.hide = setTimeout(() => setGw(null), g.secs * 1000);
     };
-    socket.on('feedClear', () => { clearTimeout(g.hide); clearTimeout(g.swap); setGw(null); });
+    socket.on('feedClear', () => { setChat([]); mlbOn.current = false; setMlb(null); clearTimeout(g.hide); clearTimeout(g.swap); setGw(null); });
+    socket.on('mlb', m => {   // host pressed the trophy button: show / hide the full leaderboard
+      clearTimeout(g.mt);
+      if (mlbOn.current || !m.rows.length) { mlbOn.current = false; setMlb(null); if (!m.rows.length) { setToast('🏆 No points yet'); setTimeout(() => setToast(''), 2000); } return; }
+      mlbOn.current = true; setMlb(m); g.mt = setTimeout(() => { mlbOn.current = false; setMlb(null); }, m.secs * 1000);
+    });
     socket.on('feed', items => {
+      setChat(c => { const ids = new Set(c.map(x => x.id)); return [...c, ...items.filter(x => !ids.has(x.id))].slice(-30); });
       const m = items[items.length - 1]; if (!m) return;   // busy chat: only the newest guess is shown, never a pile
       const wait = MIN_MS - (Date.now() - g.shownAt);
       clearTimeout(g.swap);
       if (wait <= 0) show(m); else g.swap = setTimeout(() => show(m), wait);
     });
     const iv = setInterval(() => { if (!paused.current) setLeft(Math.max(0, Math.ceil((deadline.current - Date.now()) / 1000))); }, 250);
-    return () => { clearInterval(iv); clearTimeout(g.hide); clearTimeout(g.swap); socket.off('state'); socket.off('settings'); socket.off('feed'); socket.off('feedClear'); };
+    return () => { clearInterval(iv); clearTimeout(g.hide); clearTimeout(g.swap); socket.off('state'); socket.off('settings'); socket.off('feed'); socket.off('feedClear'); socket.off('mlb'); clearTimeout(g.mt); };
   }, []);
   const paused = useRef(false);
   paused.current = !!s?.paused;
@@ -367,6 +374,7 @@ export default function App() {
       case 'cats': return <button className={cfg?.mode === 'specific' ? 'hot' : ''} onClick={() => (panel === 'cats' ? closePanel() : openPanel('cats'))} title="Categories">🗂️</button>;
       case 'answer': return <button className={cfg && !cfg.showAnswerWin ? 'hot' : ''} onClick={toggleAnswer} title={cfg?.showAnswerWin ? 'Correct answer is shown when guessed (tap to hide)' : 'Correct answer is hidden when guessed (tap to show)'}>{cfg && !cfg.showAnswerWin ? '🙈' : '👁️'}</button>;
       case 'sound': return <button className={L.sound ? 'hot' : ''} onClick={() => setLocal('sound', !L.sound)} title="Sound on/off">{L.sound ? '🔔' : '🔕'}</button>;
+      case 'lb': return <button className={mlb ? 'hot' : ''} onClick={() => admin('showLb')} title="Show / hide the full leaderboard">🏆</button>;
       case 'full': return <button onClick={fullscreen} title="Full screen">⛶</button>;
       case 'resetlb': return <button onClick={() => window.confirm('Reset the leaderboard?') && admin('reset')} title="Reset leaderboard">🧹</button>;
       default: return null;
@@ -444,7 +452,7 @@ export default function App() {
       </section>
 
       {/* ZONE 3 - mini leaderboard */}
-      <section className="z z3">
+      <section className={'z z3' + (L.showChat ? ' split' : '')} style={{ '--lw': 100 - L.chatW + 'fr', '--cw': L.chatW + 'fr' }}>
         <div className={'lb' + hid(L.showLb)}>
           {rows.map((p, i) => (
             <div className="lbrow" key={p.user}>
@@ -455,11 +463,23 @@ export default function App() {
             </div>
           ))}
         </div>
+        {L.showChat && (
+          <div className="chat">
+            {chat.length === 0 && <div className="chempty">💬 Live chat</div>}
+            {chat.slice(-nRows).map(m => (
+              <div className={'chrow' + (m.ok ? ' ok' : '')} key={m.id}>
+                <Avatar pic={m.pic} name={m.user} size="calc(var(--lh)*.7cqw)" />
+                <span className="ctx"><b>@{m.user}</b> {m.text}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* ZONE 4 - footer */}
       <footer className="z z4">
-        {pm !== 'offline' && <FitText as="p" className={hid(L.showFooter).trim()} dep={L.footer + L.fontScale + L.font}>{L.footer}</FitText>}
+        {reveal && L.showNext !== false && !s.paused && <div className="nextin" key={left}><small>⏭ NEXT ROUND IN</small><b>{left}</b><small>{left === 1 ? 'second' : 'seconds'}</small></div>}
+        {pm !== 'offline' && !(reveal && L.showNext !== false && !s.paused) && <FitText as="p" className={hid(L.showFooter).trim()} dep={L.footer + L.fontScale + L.font}>{L.footer}</FitText>}
         {pm !== 'live' && (
           <form className={'play' + (fb ? ' ' + fb : '')} onSubmit={sendGuess}>
             <input ref={gref} name="g" autoComplete="off" autoCapitalize="none" placeholder={pm === 'offline' ? '✍️ Type your guess…' : '🧪 Type a test guess…'} />
@@ -487,6 +507,7 @@ export default function App() {
         <div className="ov lbv" key={'l' + s.round}><FullBoard rows={s.full} secs={s.lbSecs} winner={s.winner} /></div>
       )}
 
+      {mlb && <div className="ov lbv" key="mlb"><FullBoard rows={mlb.rows} secs={mlb.secs} winner={null} /></div>}
       {toast && <div className="toast">{toast}</div>}
       {livePop && pm === 'live' && (
         <div className="livepop" onClick={e => e.target === e.currentTarget && setLivePop(false)}>

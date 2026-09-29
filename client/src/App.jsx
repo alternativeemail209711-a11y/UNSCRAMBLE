@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
-import { THEMES } from './themes.js';
+import { THEMES, DEFAULT_THEME } from './themes.js';
 import './styles.css';
 
 const socket = io();
@@ -19,25 +19,25 @@ const XF = {   // extra Google Fonts (game name + letter boxes)
   orbitron: ['Orbitron (sci-fi)', "'Orbitron',sans-serif"], righteous: ['Righteous (retro)', "'Righteous','Lilita One',sans-serif"], cinzel: ['Cinzel (classic capitals)', "'Cinzel',Georgia,serif"], robomono: ['Roboto Mono (typewriter)', "'Roboto Mono',ui-monospace,monospace"]
 };
 const TFONTS = {   // game-name fonts (Google Fonts, with safe fallbacks)
-  lilita: ['Lilita One (bold cute)', "'Lilita One','Baloo 2',Impact,sans-serif"], titan: ['Titan One (chunky)', "'Titan One','Lilita One',Impact,sans-serif"],
+  fredoka: ['Fredoka (soft yarn)', "'Fredoka','Baloo 2',ui-rounded,sans-serif"], lilita: ['Lilita One (bold cute)', "'Lilita One','Baloo 2',Impact,sans-serif"], titan: ['Titan One (chunky)', "'Titan One','Lilita One',Impact,sans-serif"],
   bungee: ['Bungee (arcade)', "'Bungee','Lilita One',Impact,sans-serif"], luckiest: ['Luckiest Guy (comic)', "'Luckiest Guy','Lilita One',Impact,sans-serif"],
   baloo: ['Baloo 2 (round)', "'Baloo 2','Fredoka',sans-serif"], ...XF, same: ['Same as text font', 'inherit']
 };
 const TILEF = { same: ['Same as text font', 'inherit'], ...FONTS, ...Object.fromEntries(Object.entries(TFONTS).filter(([k]) => k !== 'same')) };   // letter-box fonts
 // Buttons that can appear on the top toolbar (settings ⚙️ is always there so you can never lock yourself out)
-const TB = [['mode', '🧪', 'Mode (Test / Live / Solo)'], ['theme', '🎨', 'Theme'], ['pause', '⏸️', 'Pause / Resume'], ['skip', '⏭️', 'Skip round'], ['hint', '💡', 'Hint now'],
-  ['time', '⏰', 'Add 15 seconds'], ['cats', '🗂️', 'Categories'], ['answer', '👁️', 'Show / hide correct answer'], ['sound', '🔔', 'Sound on / off'], ['full', '⛶', 'Full screen'], ['lb', '🏆', 'Show / hide leaderboard now'], ['resetlb', '🧹', 'Reset leaderboard']];
+const TB = [['mode', '🧪', 'Mode (Test / Live / Solo)'], ['theme', '🎨', 'Theme'], ['pause', '⏸️', 'Pause / Resume'], ['skip', '⏭️', 'Skip round'], ['hint', '🪡', 'Hint now'],
+  ['time', '⏰', 'Add 15 seconds'], ['cats', '🧺', 'Categories'], ['answer', '👁️', 'Show / hide correct answer'], ['sound', '🔔', 'Sound on / off'], ['full', '⛶', 'Full screen'], ['lb', '🏆', 'Show / hide leaderboard now'], ['resetlb', '✂️', 'Reset leaderboard']];
 const TB_DEFAULT = ['mode', 'theme', 'pause', 'skip', 'hint', 'lb', 'full'];
 // Floating windows: every window has its own settings (g = guess window, w = winner window, l = full leaderboard window).
 // X / Y = how far it is moved from its normal place (% of the screen), Sc = size %, W = width %, Op = whole-window opacity, Bg / BgOp = background colour + opacity.
 const WDEF = {
   gRows: 1, gW: 100, gSc: 100, gX: 0, gY: 0, gOp: 100, gBg: '', gBgOp: 100, gAv: true, gNm: true, gTx: true,
   wRows: 4, wW: 100, wSc: 100, wX: 0, wY: 0, wOp: 100, wBg: '', wBgOp: 100, wAv: true, wNm: true, wWd: true, wPt: true, wHead: '',
-  lTop: 0, lVis: 0, lW: 100, lSc: 100, lX: 0, lY: 0, lOp: 100, lBg: '', lBgOp: 100, lRk: true, lAv: true, lNm: true, lPt: true, lHead: true, lTitle: '🏆 Leaderboard', lDim: true
+  lTop: 0, lVis: 0, lW: 100, lSc: 100, lX: 0, lY: 0, lOp: 100, lBg: '', lBgOp: 100, lRk: true, lAv: true, lNm: true, lPt: true, lHead: true, lTitle: '🧶 Leaderboard', lDim: true
 };
 // Puzzle letter boxes (t = tile)
-const TDEF = { tFont: 'same', tWt: '700', tFs: 64, tTxt: '', tBg1: '', tBg2: '', tEdge: '', tOk1: '', tOk2: '', tOp: 100, tBw: 7, tGap: 8, tGloss: true, tShadow: true, tBob: true };
-const DEFAULTS = { theme: 'cotton', font: 'cute', titleFont: 'lilita', toolbar: TB_DEFAULT, fontScale: 100, tileShape: 'rounded', tileScale: 100, title: 'WORD SHUFFLE', cTitle: '',
+const TDEF = { tYarn: true, tFont: 'same', tWt: '700', tFs: 64, tTxt: '', tBg1: '', tBg2: '', tEdge: '', tOk1: '', tOk2: '', tOp: 100, tBw: 7, tGap: 8, tGloss: true, tShadow: true, tBob: true };
+const DEFAULTS = { theme: DEFAULT_THEME, font: 'cute', titleFont: 'fredoka', toolbar: TB_DEFAULT, fontScale: 100, tileShape: 'rounded', tileScale: 100, title: 'WORD SHUFFLE', cTitle: '',
   footer: 'Type the correct word(s) in the chat to win!', reduceMotion: false, showTitle: true, showCategory: true, showTimer: true,
   showHint: true, showPopup: true, showLb: true, showFeed: true, showFooter: true, feedSecs: 3, lbRows: 5,
   z1: 9, zg: 8, z2: 34, z4: 14, sound: false, volume: 60, playerName: 'Me', cBg1: '', cBg2: '', cA1: '', cA2: '', cTxt: '', liveAsk: true, showNext: true, showChat: true, chatW: 48, ...WDEF, ...TDEF };
@@ -49,17 +49,20 @@ const MODES = {
 const TT_TEXT = { off: '', nouser: '⚠️ No TikTok username yet - open ⚙️ → 🔴 Live and type it in', connecting: '⏳ Connecting to TikTok…', connected: '✅ Connected to TikTok chat', retrying: '⏳ Not live yet - retrying every 15s' };
 // One-time upgrade: older saved layouts (3 leaderboard rows, old zone heights, 'UNSCRAMBLE LIVE') are replaced by the new layout.
 const LAYOUT_V = '4', OLD_KEYS = ['z1', 'zg', 'z2', 'z4', 'lbRows', 'feedLines'];
+const KNIT_KEYS = ['theme', 'titleFont', 'tOk1', 'tOk2', 'tBg1', 'tBg2', 'tEdge', 'tTxt', 'cBg1', 'cBg2', 'cA1', 'cA2', 'cTxt', 'cTitle', 'lTitle'];   // old colours/fonts are dropped once, so the knitting look shows up
 const cleanOld = o => { const c = { ...o }; OLD_KEYS.forEach(k => delete c[k]); if (c.title === 'UNSCRAMBLE LIVE') delete c.title; return c; };
 const readSaved = key => {
   let o = {}; try { o = JSON.parse(localStorage.getItem(key) || '{}'); } catch { o = {}; }
   try { if (localStorage.getItem('ul-layout-v') !== LAYOUT_V) o = cleanOld(o); } catch { /* ignore */ }
   try { if (localStorage.getItem('ul-title-v') !== '1' && (o.title === 'UNSCRAMBLE' || o.title === 'UNSCRAMBLE LIVE')) { o = { ...o }; delete o.title; } } catch { /* ignore */ }
+  try { if (localStorage.getItem('ws-knit-v') !== '1') { o = { ...o }; KNIT_KEYS.forEach(k => delete o[k]); } } catch { /* ignore */ }
   return o;
 };
 const markMigrated = () => {
   try {
     if (localStorage.getItem('ul-layout-v') !== LAYOUT_V) { localStorage.setItem('ul-defaults', JSON.stringify(readSaved('ul-defaults'))); localStorage.setItem('ul-settings', JSON.stringify(readSaved('ul-settings'))); localStorage.setItem('ul-layout-v', LAYOUT_V); }
     if (localStorage.getItem('ul-title-v') !== '1') { localStorage.setItem('ul-defaults', JSON.stringify(readSaved('ul-defaults'))); localStorage.setItem('ul-settings', JSON.stringify(readSaved('ul-settings'))); localStorage.setItem('ul-title-v', '1'); }
+    if (localStorage.getItem('ws-knit-v') !== '1') { localStorage.setItem('ul-defaults', JSON.stringify(readSaved('ul-defaults'))); localStorage.setItem('ul-settings', JSON.stringify(readSaved('ul-settings'))); localStorage.setItem('ws-knit-v', '1'); }
   } catch { /* ignore */ }
 };
 const loadDefaults = () => ({ ...DEFAULTS, ...readSaved('ul-defaults') });
@@ -106,7 +109,7 @@ const WINF = {
     tg('gAv', 'Show profile picture'), tg('gNm', 'Show @username'), tg('gTx', 'Show the guess text'), ...posF('g', 30, 100)] },
   w: { title: '🏆 Winner window (centre)', fields: [
     tg('showPopup', 'Show this window'), { ...rg('popupSecs', 'Stays for', 2, 30, 1, 's'), src: 'cfg' }, rg('wRows', 'Rows (1 = everything on one row … 4 = each item on its own row)', 1, 4),
-    tg('wAv', 'Show profile picture'), tg('wNm', 'Show @username'), tg('wWd', 'Show the correct word'), tg('wPt', 'Show the points (+1)'), { k: 'wHead', l: 'Heading text (optional, e.g. 🎉 WINNER!)', t: 'text' }, ...posF('w', 40, 115)] },
+    tg('wAv', 'Show profile picture'), tg('wNm', 'Show @username'), tg('wWd', 'Show the correct word'), tg('wPt', 'Show the points (+1)'), { k: 'wHead', l: 'Heading text (optional, e.g. 🧶 WINNER!)', t: 'text' }, ...posF('w', 40, 115)] },
   l: { title: '📊 Full leaderboard window', fields: [
     { ...tg('showLbOverlay', 'Show this window after the winner window'), src: 'cfg' }, { ...rg('lbSecs', 'Stays for', 3, 60, 1, 's'), src: 'cfg' },
     rg('lTop', 'Players listed (0 = everyone)', 0, 50), rg('lVis', 'Rows visible at once (0 = auto, extra players scroll)', 0, 15),
@@ -120,20 +123,21 @@ const TILE_F = [
   clrF('tTxt', 'Letter colour (Reset = theme)'), clrF('tBg1', 'Box colour - top (Reset = theme)'), clrF('tBg2', 'Box colour - bottom (same as top = solid)'), clrF('tEdge', 'Border colour'),
   rg('tOp', 'Box opacity (letters stay solid)', 0, 100, 5, '%'), rg('tBw', 'Border thickness', 0, 15, 1, '%'), rg('tGap', 'Space between boxes', 0, 40, 1, '%'),
   clrF('tOk1', 'Solved colour - top (when the word is revealed)'), clrF('tOk2', 'Solved colour - bottom'),
-  tg('tGloss', 'Glossy highlight'), tg('tShadow', 'Drop shadow'), tg('tBob', 'Bouncing / wobble animation')];
+  tg('tYarn', 'Multicolour yarn boxes (Off = one plain wool colour)'), tg('tGloss', 'Glossy highlight'), tg('tShadow', 'Drop shadow'), tg('tBob', 'Bouncing / wobble animation')];
 
 // CSS variables for the letter boxes and for the floating windows
 const mixc = (c, p) => (p >= 100 ? c : `color-mix(in srgb, ${c} ${p}%, transparent)`);
 const tileVars = l => {
   const o = l.tOp ?? 100, v = {
-    '--tb1': mixc(l.tBg1 || 'var(--t1)', o), '--tb2': mixc(l.tBg2 || 'var(--t2)', o), '--tbe': mixc(l.tEdge || 'var(--te)', o), '--tok1': mixc(l.tOk1 || '#b6ffd2', o), '--tok2': mixc(l.tOk2 || '#3fdc8c', o),
+    '--tb1': mixc(l.tBg1 || 'var(--t1)', o), '--tb2': mixc(l.tBg2 || 'var(--t2)', o), '--tbe': mixc(l.tEdge || 'var(--te)', o), '--tok1': mixc(l.tOk1 || '#C6E8B4', o), '--tok2': mixc(l.tOk2 || '#7DBB68', o),
     '--tbw': (l.tBw ?? 7) / 100, '--tfs': (l.tFs ?? 64) / 100, '--tfw': l.tWt || '700', '--tgap': (l.tGap ?? 8) / 100, '--hl': l.tGloss === false ? 'none' : 'block' };
   if (l.tTxt) v['--ttx'] = l.tTxt;
   const ff = (TILEF[l.tFont] || [])[1]; if (ff && ff !== 'inherit') v['--tff'] = ff;
   if (l.tGloss === false) v['--tgl'] = 'linear-gradient(#0000,#0000)';
   return v;
 };
-const themeVars = l => ({ ...(THEMES[l.theme] || THEMES.cotton).v, ...(l.cBg1 && { '--bg1': l.cBg1 }), ...(l.cBg2 && { '--bg2': l.cBg2 }), ...(l.cA1 && { '--a1': l.cA1 }), ...(l.cA2 && { '--a2': l.cA2 }), ...(l.cTxt && { '--text': l.cTxt }) });
+const yarnOn = l => l.tYarn !== false && !l.tBg1 && !l.tBg2;   // multicolour yarn letter boxes (only while no custom box colour is chosen)
+const themeVars = l => ({ ...(THEMES[l.theme] || THEMES[DEFAULT_THEME]).v, ...(l.cBg1 && { '--bg1': l.cBg1 }), ...(l.cBg2 && { '--bg2': l.cBg2 }), ...(l.cA1 && { '--a1': l.cA1 }), ...(l.cA2 && { '--a2': l.cA2 }), ...(l.cTxt && { '--text': l.cTxt }) });
 const winPos = (l, p) => { const x = l[p + 'X'], y = l[p + 'Y'], sc = l[p + 'Sc'], op = l[p + 'Op']; return { transform: x || y || sc !== 100 ? `translate(${x}cqw, ${y}cqh) scale(${sc / 100})` : 'none', opacity: op / 100 }; };
 const winBg = (l, p, d) => { const c = l[p + 'Bg'] || d, o = l[p + 'BgOp']; return o >= 100 ? c : `color-mix(in srgb, ${c} ${o}%, transparent)`; };
 const SAMPLE_G = ['sample_fan|is it a planet?|0', 'word_wizard|PLANET|1', 'quick_fox|maybe a star|0', 'lucky_lily|comet?|0', 'top_guesser|moon|0'].map((x, i) => { const [user, text, ok] = x.split('|'); return { id: 'sg' + i, user, text, ok: ok === '1', pic: '' }; });
@@ -145,7 +149,7 @@ const winKeys = p => Object.keys(WDEF).filter(k => k[0] === p);
 const ICONS = { font: '🔤', fontScale: '🔠', tileShape: '🔷', tileScale: '🔳', title: '✏️', footer: '📝', playerName: '👤', reduceMotion: '🐢', showTitle: '🏷️', showCategory: '📂',
   showTimer: '⏱️', showHint: '🔎', showFeed: '💬', showPopup: '🏆', showLb: '📊', showFooter: '📄', feedSecs: '⏳', lbRows: '🔢', z1: '📏', zg: '📏', z2: '📏', z4: '📏', volume: '🔊',
   roundSeconds: '⏲️', popupSecs: '🕒', showLbOverlay: '🥇', lbSecs: '🕓', showAnswer: '⌛', revealSeconds: '🕰️', minLetters: '🔽', maxLetters: '🔼', allowMulti: '🔀',
-  spaceless: '⎵', hints: '💡', hintStart: '🚦', hintEvery: '🔁', maxHints: '🔟', botOn: '🤖', botEvery: '⏩', botSkill: '🎯', titleFont: '🅰️' };
+  spaceless: '⎵', hints: '🪡', hintStart: '🚦', hintEvery: '🔁', maxHints: '🔟', botOn: '🤖', botEvery: '⏩', botSkill: '🎯', titleFont: '🅰️' };
 const SKIP = new Set(['theme', 'sound', 'showAnswerWin']);   // these already have their own built-in buttons
 const FGROUPS = [['look', '🎨 Look settings'], ['layout', '📐 Layout settings'], ['game', '🎮 Game settings']];
 const FITEMS = FGROUPS.flatMap(([g]) => FIELDS[g].filter(f => !SKIP.has(f.k)).map(f => ({ id: 'f:' + f.k, f, src: g === 'game' ? 'cfg' : 'L' })));
@@ -214,7 +218,7 @@ function WinnerCard({ w, l }) {
   for (let i = 0; i < R; i++) { const c = base + (i < extra ? 1 : 0); groups.push(items.slice(at, at + c)); at += c; }
   const part = (id, shared) => (id === 'av' ? <Avatar key={id} pic={w.pic} name={w.user} size={shared ? '15cqw' : '30cqw'} />
     : id === 'nm' ? <b key={id} className="pn">@{w.user}</b>
-      : id === 'wd' ? <FitText key={id} className="wd" dep={w.word}>{w.word || '🎉 Correct!'}</FitText>
+      : id === 'wd' ? <FitText key={id} className="wd" dep={w.word}>{w.word || '🧶 Correct!'}</FitText>
         : <div key={id} className="pt">+{w.pts}</div>);
   return (
     <div className="pop" style={{ width: 82 * l.wW / 100 + 'cqw', background: winBg(l, 'w', 'var(--bg1)') }}>
@@ -363,7 +367,7 @@ export default function App() {
 
   useEffect(() => { if (s?.phase === 'reveal' && s.winnerInfo && L.sound) beep(L.volume, [523, 659, 784, 1047]); }, [s?.phase, s?.round]); // eslint-disable-line
 
-  const theme = THEMES[L.theme] || THEMES.cotton;
+  const theme = THEMES[L.theme] || THEMES[DEFAULT_THEME];
   // The WHOLE page (also the strips above the toolbar and below the footer, and the phone's status bar) uses the same theme colours as the game.
   useEffect(() => {
     const r = document.documentElement, b1 = L.cBg1 || theme.v['--bg1'], b2 = L.cBg2 || theme.v['--bg2'];
@@ -460,7 +464,7 @@ export default function App() {
   // Mini leaderboard: row height is calculated from the room the zone really has, so rows shrink to fit and can never spill into the footer.
   const availLb = z3 * CQ - 2, nRows = Math.max(1, Math.min(L.lbRows, Math.floor(availLb / 5.5)));
   const lh = Math.min(10, availLb / nRows) - 1;
-  const style = { ...themeVars(L), ...tileVars(L), ...(L.cTitle && { '--tcol': L.cTitle }), '--fs': L.fontScale / 100, '--ff': FONTS[L.font][1], '--tf': (TFONTS[L.titleFont] || TFONTS.lilita)[1] === 'inherit' ? FONTS[L.font][1] : (TFONTS[L.titleFont] || TFONTS.lilita)[1], '--tr': RADIUS[L.tileShape], '--lh': lh, '--barH': bl.H, gridTemplateRows: `auto minmax(0,${z1}fr) minmax(0,${zg}fr) minmax(0,${z2}fr) minmax(0,${z3}fr) minmax(0,${z4}fr)` };
+  const style = { ...themeVars(L), ...tileVars(L), ...(L.cTitle && { '--tcol': L.cTitle }), '--fs': L.fontScale / 100, '--ff': FONTS[L.font][1], '--tw': L.titleFont === 'fredoka' ? 700 : 400, '--tf': (TFONTS[L.titleFont] || TFONTS.lilita)[1] === 'inherit' ? FONTS[L.font][1] : (TFONTS[L.titleFont] || TFONTS.lilita)[1], '--tr': RADIUS[L.tileShape], '--lh': lh, '--barH': bl.H, gridTemplateRows: `auto minmax(0,${z1}fr) minmax(0,${zg}fr) minmax(0,${z2}fr) minmax(0,${z3}fr) minmax(0,${z4}fr)` };
   const hid = on => (on ? '' : ' hid');
   const fval = it => (it.src === 'cfg' ? cfg?.[it.f.k] : L[it.f.k]);
   const fset = (it, v) => { if (it.src === 'cfg') { setCfg(c => ({ ...c, [it.f.k]: v })); admin('set', { patch: { [it.f.k]: v } }); } else setLocal(it.f.k, v); };
@@ -492,7 +496,7 @@ export default function App() {
   const stage = won ? (s.lbSecs > 0 && s.full?.length && left <= s.lbSecs ? 'lb' : 'pop') : null;   // winner window first, full leaderboard for the last lbSecs
 
   return (
-    <div className={'stage' + (L.reduceMotion ? ' calm' : '') + (L.tShadow === false ? ' nosh' : '') + (L.tBob === false ? ' nobob' : '')} style={style}>
+    <div className={'stage' + (L.reduceMotion ? ' calm' : '') + (L.tShadow === false ? ' nosh' : '') + (L.tBob === false ? ' nobob' : '') + (yarnOn(L) ? ' yarnTiles' : '')} style={style}>
       {mmenu && (
         <div className="menu wide">
           {Object.entries(MODES).map(([k, x]) => (
@@ -659,7 +663,7 @@ export default function App() {
             {panel === 'tile' && (
               <>
                 <p className="note"><b>Puzzle letter boxes.</b> The preview below shows your unsaved changes (top: puzzle boxes, bottom: solved boxes). Press Save &amp; Apply to use them in the game.</p>
-                <div className={'tilepv' + (draft.L.tShadow === false ? ' nosh' : '') + (draft.L.tBob === false ? ' nobob' : '')}
+                <div className={'tilepv' + (draft.L.tShadow === false ? ' nosh' : '') + (draft.L.tBob === false ? ' nobob' : '') + (yarnOn(draft.L) ? ' yarnTiles' : '')}
                   style={{ ...themeVars(draft.L), ...tileVars(draft.L), '--ff': FONTS[draft.L.font][1], '--tr': RADIUS[draft.L.tileShape], '--t': '10.5cqw' }}>
                   <div className="word">{[...'SHUFFLE'].map((c, i) => <span key={i} className="tile">{c}</span>)}</div>
                   <div className="word">{[...'WORD'].map((c, i) => <span key={i} className="tile ok">{c}</span>)}</div>

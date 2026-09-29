@@ -1,0 +1,65 @@
+WORD SHUFFLE  -  KNITTING EDITION  🧶
+=====================================
+
+WHAT CHANGED
+------------
+The whole game now wears the same knitting look as your platform:
+ - Knitted-fabric background (tiny rows of stitches) in soft wool colours
+ - Every button is a little yarn ball with a stitched ring
+ - Every letter box is a knitted patch with a stitched border, and each one
+   is a different yarn colour (mustard, moss, terracotta, denim, rose, lavender)
+ - Solved words turn moss-green
+ - Timer bar looks like twisted yarn
+ - Stitched (dashed) borders on the leaderboard, chat, winner window, menus
+   and settings screens
+ - Same 6 wool themes as your platform + a dark "Night Wool" theme
+   (tap the theme button on the top bar to switch)
+ - New puzzle category: KNITTING & YARN
+ - Yarn-ball icon on the browser tab
+
+You do NOT need to change anything in the code.
+
+
+HOW TO DEPLOY (same way as before)
+----------------------------------
+1. Unzip / open this folder "word-shuffle" on your computer.
+
+2. GitHub:
+   - Open your existing WORD SHUFFLE repository on github.com
+     (or make a new one: + > New repository, do NOT tick "Add a README").
+   - Click "Add file" > "Upload files".
+   - Select EVERYTHING inside the word-shuffle folder (Ctrl+A) and drag it
+     onto the page. Drag the folders themselves (client, data, tools).
+   - Click the green "Commit changes" button.
+
+3. Render.com:
+   - If you already have WORD SHUFFLE on Render, it redeploys by itself
+     after you commit. Wait until it says "Live".
+   - If it is new: New + > Web Service > pick your repository, then set
+        Build Command:  npm install
+        Start Command:  npm start
+     and add these under Environment:
+        TIKTOK_USERNAME  = your TikTok name (no @)
+        TIKTOK_SIGN_API_KEY = your Euler key
+     Then click "Create Web Service".
+
+4. Open your Render link on your phone. You should see the cream wool
+   background with yarn-coloured letter boxes.
+
+
+IF YOU STILL SEE THE OLD LOOK
+-----------------------------
+ - Refresh the page (pull down), or close and reopen the browser tab.
+ - The first time it opens, the game automatically clears the OLD colours
+   saved on your phone, so the knitting look shows up. Your other settings
+   (round time, title text, toolbar buttons, etc.) are kept.
+
+OPTIONAL LOOK SETTINGS
+----------------------
+Settings (gear button) > Look > Letter boxes:
+  "Multicolour yarn boxes" - turn OFF if you want all boxes in one wool
+  colour (the theme colour) instead.
+
+NOTE: I could not run a test build in my workspace (no internet there), so
+the first Render build is the real test. If Render shows "Build failed",
+copy the last 20 lines of the red log and send them to me - I'll fix it.

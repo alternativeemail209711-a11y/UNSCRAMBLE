@@ -16,7 +16,7 @@ body{background:none;position:fixed;inset:0;display:flex;justify-content:center;
 .bar{min-width:0;max-width:100%;overflow:hidden;position:relative;z-index:30;height:calc(var(--barH,12)*1cqw);padding:0 2cqw;display:flex;align-items:center;justify-content:flex-start;gap:1cqw;background:var(--panel);backdrop-filter:blur(6px);border-bottom:.6cqw dashed var(--te);border-radius:0 0 5cqw 5cqw}
 .bar button{flex:0 0 calc(var(--bs,8)*1cqw);width:calc(var(--bs,8)*1cqw);min-width:0;aspect-ratio:1;padding:0;display:grid;place-items:center;border-radius:35%;border:.5cqw solid var(--te);background:linear-gradient(var(--t1),var(--t2));color:var(--tt);font-size:calc(var(--bs,8)*.55cqw);line-height:1;cursor:pointer;box-shadow:0 .7cqw 0 var(--te);transition:transform .1s}
 /* GAME NAME: no border, no badge. First word (small, exactly 50% of the big word) above the big word; always clipped to its own area. */
-.bar .brand{flex:1 1 0;width:auto;min-width:0;height:10cqw;display:flex;align-items:center;justify-content:center;padding:.3cqw 1cqw;overflow:hidden;border:0;border-radius:0;background:none;box-shadow:none;color:var(--tcol,var(--text));font-family:var(--tf);font-weight:400}
+.bar .brand{flex:1 1 0;width:auto;min-width:0;height:10cqw;display:flex;align-items:center;justify-content:center;padding:.3cqw 1cqw;overflow:hidden;border:0;border-radius:0;background:none;box-shadow:none;color:var(--tcol,var(--text));font-family:var(--tf);font-weight:var(--tw,400)}
 .bar .brand .bi{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;white-space:nowrap;letter-spacing:.04em;text-shadow:0 .3cqw 0 var(--panel)}
 .bar .brand .l1{display:block;font-size:calc(var(--bf,4cqw)*.5);line-height:1.1}
 .bar .brand .l2{display:block;font-size:var(--bf,4cqw);line-height:1.1}
@@ -207,3 +207,84 @@ textarea{width:100%;padding:8px;border-radius:8px;border:1px solid var(--te);bac
 .prevback{position:absolute;z-index:50;left:50%;bottom:4cqw;transform:translateX(-50%);padding:2.4cqw 5cqw;border-radius:99px;border:.5cqw solid var(--te);background:var(--a1);color:var(--bt);font:800 4cqw var(--ff);cursor:pointer;box-shadow:0 1cqw 3cqw #0006}
 /* letter-box preview inside the settings panel */
 .tilepv{display:flex;flex-direction:column;align-items:center;gap:calc(var(--t)*.35);padding:3cqw 0 4cqw;margin:6px 0;border-radius:4cqw;overflow:hidden;background:linear-gradient(160deg,var(--bg1),var(--bg2));border:1px solid var(--te);color:var(--text);font-family:var(--ff)}
+
+
+/* =====================================================================
+   KNITTING LAYER  -  wool, stitches and yarn (loaded last, so it wins)
+   ===================================================================== */
+/* the whole page is knitted fabric: rows of little "V" stitches over the wool colour */
+html{background-image:
+  url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='28'%3E%3Cg fill='none' stroke-linecap='round' stroke-linejoin='round' stroke-width='3'%3E%3Cpath d='M3 3 L11 14 L19 3' stroke='rgba(255,255,255,.30)'/%3E%3Cpath d='M3 16 L11 27 L19 16' stroke='rgba(255,255,255,.30)'/%3E%3Cpath d='M3 5 L11 16 L19 5' stroke='rgba(90,60,20,.06)'/%3E%3Cpath d='M3 18 L11 29 L19 18' stroke='rgba(90,60,20,.06)'/%3E%3C/g%3E%3C/svg%3E"),
+  linear-gradient(160deg,var(--bg1),var(--bg2));background-size:22px 28px,100% 100%;background-attachment:fixed,fixed}
+.stage{background:none}
+/* soft yarn-ball colour glows in the corners, like the platform home page */
+.stage::before{content:'';position:absolute;inset:0;pointer-events:none;z-index:-1;
+  background:radial-gradient(circle at 6% 8%,rgba(169,211,236,.45) 0,#0000 30%),radial-gradient(circle at 96% 5%,rgba(243,183,198,.45) 0,#0000 28%),radial-gradient(circle at 94% 94%,rgba(184,222,174,.45) 0,#0000 32%),radial-gradient(circle at 4% 96%,rgba(211,191,236,.45) 0,#0000 30%)}
+
+/* TOOLBAR: a knitted band with a stitched (dashed) edge; buttons are little yarn balls with a stitch ring */
+.bar{border-bottom:.7cqw dashed var(--te);box-shadow:0 1cqw 0 rgba(90,60,20,.10)}
+.bar button{position:relative;border-radius:50%;border:.5cqw solid var(--te);box-shadow:inset 0 .5cqw .6cqw #fff8,inset 0 -.8cqw 1cqw #0001,0 .7cqw 0 var(--te)}
+.bar button::before{content:'';position:absolute;inset:13%;border-radius:50%;border:.35cqw dashed currentColor;opacity:.32;pointer-events:none}
+.bar .brand::before,.bar .brand{border-radius:0}.bar .brand::before{display:none}
+.bar .trow button{border-radius:999px}.bar .trow button::before{border-radius:999px}
+.bar button.hot{box-shadow:inset 0 .5cqw .6cqw #fff6,inset 0 -.8cqw 1cqw #0002,0 .7cqw 0 var(--te)}
+.bar button.m-live{background:linear-gradient(#EE8A66,#D9663D);color:#fff;border-color:#9A4526;box-shadow:inset 0 .5cqw .6cqw #fff6,0 .7cqw 0 #9A4526}
+.bar button.m-test{background:linear-gradient(#F0CB6A,#D9A02E);color:#4a3200;border-color:#8A5F0A;box-shadow:inset 0 .5cqw .6cqw #fff6,0 .7cqw 0 #8A5F0A}
+.bar button.m-offline{background:linear-gradient(#9CD088,#5B9C4A);color:#12310c;border-color:#33612A;box-shadow:inset 0 .5cqw .6cqw #fff6,0 .7cqw 0 #33612A}
+
+/* CATEGORY BADGE + NEXT-ROUND BADGE: stitched patches */
+.cat,.nextin{border:.7cqw dashed #fffd;box-shadow:inset 0 .4cqw 0 #fff5,0 1cqw 0 #0002,0 1.5cqw 3cqw #0002}
+.nextin{border-width:.5cqw}
+h1,.bar .brand .bi{text-shadow:0 .4cqw 0 #fff,0 .9cqw 0 rgba(139,90,52,.18)}
+
+/* LETTER BOXES: knitted patches with a stitched inner border */
+.tile::before{content:'';position:absolute;inset:9%;border-radius:calc(var(--tr,32%)*.72);border:calc(var(--t)*.035) dashed var(--tbe,var(--te));opacity:.5;pointer-events:none}
+.tile::after{border-radius:99px}
+/* multicolour yarn: every box is a different ball of wool (mustard, moss, terracotta, denim, rose, lavender) */
+.yarnTiles .tile{color:#fff;text-shadow:0 calc(var(--t)*.045) 0 rgba(60,35,10,.55)}
+.yarnTiles .tile::before{border-color:#fff;opacity:.6}
+.yarnTiles .tile:nth-child(6n+1){--tb1:#EEC25A;--tb2:#D0991E;--tbe:#8A5F0A}
+.yarnTiles .tile:nth-child(6n+2){--tb1:#8CC877;--tb2:#57964A;--tbe:#33612A}
+.yarnTiles .tile:nth-child(6n+3){--tb1:#F09070;--tb2:#D9663D;--tbe:#9A4526}
+.yarnTiles .tile:nth-child(6n+4){--tb1:#74BADB;--tb2:#3A8FB7;--tbe:#276583}
+.yarnTiles .tile:nth-child(6n+5){--tb1:#E884A8;--tb2:#C9527C;--tbe:#8E3557}
+.yarnTiles .tile:nth-child(6n){--tb1:#B392E0;--tb2:#7F52B8;--tbe:#573582}
+/* solved word: the whole word turns moss-green yarn */
+.tile.ok{border-color:#33612A;box-shadow:0 calc(var(--t)*.11) 0 #33612A,0 calc(var(--t)*.2) calc(var(--t)*.25) #0002}
+.tile.ok::before{border-color:#33612A;opacity:.55}
+.yarnTiles .tile.ok{color:#1F3D18;text-shadow:0 calc(var(--t)*.03) 0 #fff9}
+.yarnTiles .tile.ok::before{border-color:#33612A}
+
+/* TIMER: a twisted strand of yarn */
+.strip{border:.5cqw dashed var(--te)}
+.bar-fill{background:repeating-linear-gradient(-45deg,var(--a1) 0 2.2cqw,var(--a2) 2.2cqw 4.4cqw);opacity:.55}
+
+/* LEADERBOARD, CHAT, FEED: stitched pills */
+.lbrow,.chrow,.fbrow{border:.4cqw dashed var(--te);box-shadow:0 .5cqw 0 rgba(90,60,20,.10)}
+.chrow.ok,.fbrow.new{border-color:#fffd}
+.av{border:.5cqw solid var(--a1);box-shadow:0 0 0 .35cqw #fff8}
+
+/* FLOATING WINDOWS: guess window, winner window, full leaderboard */
+.gwin{border:.5cqw dashed var(--te);box-shadow:0 .9cqw 0 rgba(90,60,20,.14),0 1.5cqw 3cqw #0002}
+.pop{border:1cqw dashed var(--a1);box-shadow:0 1.2cqw 0 var(--a2),0 2cqw 8cqw #000a;background:var(--bg1)}
+.pop .av,.pop .av.ph{box-shadow:0 0 0 1.2cqw var(--a2)}
+.fb{border:.9cqw dashed var(--a1);box-shadow:0 1.2cqw 0 var(--a2),0 2cqw 8cqw #000a}
+.livecard{border:.7cqw dashed var(--te)}
+.menu{border:.5cqw dashed var(--te);background:var(--bg1)}
+.menu button.on{background:var(--panel);outline:.35cqw dashed var(--te);outline-offset:-.8cqw}
+
+/* GUESS BOX */
+.play input{border:.6cqw dashed var(--te)}
+.play button{position:relative;border-style:solid}
+.play button.hot{box-shadow:0 0 0 .8cqw var(--a1)}
+.toast,.prevback{border:.5cqw dashed #fffd}
+
+/* SETTINGS SCREEN */
+.tabs button,.act,.seg button,.clr button{border:2px dashed var(--te);border-radius:14px}
+.tabs button.on,.seg button.on,.act.go{border-style:solid;background:linear-gradient(var(--a1),var(--a2));color:var(--bt)}
+.savebar .act.alt{background:var(--a2);color:var(--bt);border-style:solid}
+.fld{border-bottom:2px dashed var(--panel)}
+.sec{border-bottom:2px dashed var(--te);font-weight:800}
+.tilepv{border:2px dashed var(--te)}
+.fld select,.fld input[type=text],.fld input[type=password],textarea{border:2px dashed var(--te)}
+.fld select:focus,.fld input:focus,textarea:focus{border-style:solid;outline:none}

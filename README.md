@@ -51,6 +51,9 @@ Every avatar (guess window, winner window, leaderboards) loads the viewer's real
 Game name **UNSCRAMBLE** (left) · 🧪🔴🎮 mode · 🎨 theme · ⏸ pause/resume · ⏭ skip · 💡 hint now · ⏰ +15s · ⛶ full screen · ⚙️ settings
 (Categories, show/hide answer and sound now live in ⚙️ settings: Categories tab, Game tab, Layout tab.)
 
+## Customize the top toolbar
+⚙️ → **🧰 Toolbar**: tick or untick which buttons appear (mode, theme, pause, skip, hint, +15s, categories, show/hide answer, sound, full screen). ⚙️ settings is always shown. The game name sits in a badge that always shrinks to fit its own space, whatever font or theme you pick.
+
 ## Save & Apply (⚙️ settings)
 Change anything in Look / Layout / Game / Categories - nothing is applied until you press one of the two buttons at the bottom:
 - **💾 Save & Apply** - applies all settings now and starts a fresh round. Settings are remembered.

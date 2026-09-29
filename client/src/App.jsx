@@ -17,10 +17,14 @@ const TFONTS = {   // game-name fonts (Google Fonts, with safe fallbacks)
   bungee: ['Bungee (arcade)', "'Bungee','Lilita One',Impact,sans-serif"], luckiest: ['Luckiest Guy (comic)', "'Luckiest Guy','Lilita One',Impact,sans-serif"],
   baloo: ['Baloo 2 (round)', "'Baloo 2','Fredoka',sans-serif"], same: ['Same as text font', 'inherit']
 };
-const DEFAULTS = { theme: 'cotton', font: 'cute', titleFont: 'lilita', fontScale: 100, tileShape: 'rounded', tileScale: 100, title: 'UNSCRAMBLE',
+const DEFAULTS = { theme: 'cotton', font: 'cute', titleFont: 'lilita', toolbar: TB_DEFAULT, fontScale: 100, tileShape: 'rounded', tileScale: 100, title: 'UNSCRAMBLE',
   footer: 'Type the correct word(s) in the chat to win!', reduceMotion: false, showTitle: true, showCategory: true, showTimer: true,
   showHint: true, showPopup: true, showLb: true, showFeed: true, showFooter: true, feedSecs: 3, lbRows: 5,
   z1: 9, zg: 9, z2: 40, z4: 13, sound: false, volume: 60, playerName: 'Me' };
+// Buttons that can appear on the top toolbar (settings ⚙️ is always there so you can never lock yourself out)
+const TB = [['mode', '🧪', 'Mode (Test / Live / Solo)'], ['theme', '🎨', 'Theme'], ['pause', '⏸️', 'Pause / Resume'], ['skip', '⏭️', 'Skip round'], ['hint', '💡', 'Hint now'],
+  ['time', '⏰', 'Add 15 seconds'], ['cats', '🗂️', 'Categories'], ['answer', '👁️', 'Show / hide correct answer'], ['sound', '🔔', 'Sound on / off'], ['full', '⛶', 'Full screen']];
+const TB_DEFAULT = ['mode', 'theme', 'pause', 'skip', 'hint', 'time', 'full'];
 const MODES = {
   test: ['🧪', 'TEST', 'Test mode', 'Try games & upgrades. TikTok chat is OFF. Use the guess box, ✅ (solve), 💬 (fake chat) and 🤖 (auto-guessing bot).'],
   live: ['🔴', 'LIVE', 'Live mode', 'Go live on TikTok. Reads the TikTok chat. Guess box is hidden.'],
@@ -162,6 +166,34 @@ function FitText({ as: Tag = 'div', className, children, dep }) {
   }, [dep]);   // eslint-disable-line
   return <Tag ref={ref} className={className}>{children}</Tag>;
 }
+
+// GAME NAME BADGE: always fits inside its own reserved box on the toolbar, whatever the font or theme.
+// It re-measures after fonts finish loading, when the theme/font/size changes, and when the screen is resized.
+function BrandTitle({ text, dep, on }) {
+  const box = useRef(null), txt = useRef(null);
+  useLayoutEffect(() => {
+    const b = box.current, t = txt.current; if (!b || !t) return;
+    let dead = false;
+    const fit = () => {
+      if (dead) return;
+      t.style.fontSize = '';
+      let px = parseFloat(getComputedStyle(t).fontSize);
+      const cs = getComputedStyle(b), room = b.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+      for (let i = 0; i < 6 && room > 0; i++) {   // a few passes, because letter-spacing does not scale with the font size
+        const w = t.getBoundingClientRect().width;
+        if (w <= room - 0.5) break;
+        px = Math.max(5, px * (room / w) * 0.96); t.style.fontSize = px + 'px';
+      }
+    };
+    fit();
+    const ro = new ResizeObserver(fit); ro.observe(b);
+    document.fonts?.ready?.then(fit);
+    document.fonts?.addEventListener?.('loadingdone', fit);
+    const t1 = setTimeout(fit, 600), t2 = setTimeout(fit, 2500);   // safety re-checks for slow phones
+    return () => { dead = true; ro.disconnect(); clearTimeout(t1); clearTimeout(t2); document.fonts?.removeEventListener?.('loadingdone', fit); };
+  }, [dep, text]);   // eslint-disable-line
+  return <div ref={box} className={'brand' + (on ? '' : ' hid')}><span ref={txt}>{text}</span></div>;
+}
 const CatBanner = ({ text, on, dep }) => <FitText className={'cat' + (on ? '' : ' hid')} dep={text + '|' + dep}>✨ CATEGORY: {text}</FitText>;
 
 function Field({ f, v, set }) {
@@ -288,6 +320,7 @@ export default function App() {
   const lh = Math.min(9, availLb / nRows) - 1;
   const style = { ...theme.v, '--fs': L.fontScale / 100, '--ff': FONTS[L.font][1], '--tf': (TFONTS[L.titleFont] || TFONTS.lilita)[1] === 'inherit' ? FONTS[L.font][1] : (TFONTS[L.titleFont] || TFONTS.lilita)[1], '--tr': RADIUS[L.tileShape], '--lh': lh, gridTemplateRows: `auto minmax(0,${z1}fr) minmax(0,${zg}fr) minmax(0,${z2}fr) minmax(0,${z3}fr) minmax(0,${z4}fr)` };
   const hid = on => (on ? '' : ' hid');
+  const tbList = Array.isArray(L.toolbar) ? L.toolbar : TB_DEFAULT, tb = Object.fromEntries(TB.map(([k]) => [k, tbList.includes(k)])), tbN = tbList.filter(k => TB.some(x => x[0] === k)).length + 1;
   const rows = s.leaderboard.slice(0, nRows);   // only real winners - no empty placeholder rows
   const won = reveal && s.winnerInfo;
   const stage = won ? (s.lbSecs > 0 && s.full?.length && left <= s.lbSecs ? 'lb' : 'pop') : null;   // winner window first, full leaderboard for the last lbSecs
@@ -312,15 +345,18 @@ export default function App() {
       )}
 
       {/* ALWAYS-VISIBLE HOST TOOLBAR */}
-      <nav className="bar">
-        <FitText className={'brand' + hid(L.showTitle)} dep={L.title + L.fontScale + L.font + L.titleFont}>{L.title}</FitText>
-        <button className={'mode m-' + pm} onClick={() => { setMmenu(m => !m); setMenu(false); }} title="Mode: Test / Live / Offline">{MODES[pm][0]}<small>{MODES[pm][1]}</small></button>
-        <button onClick={() => { setMenu(m => !m); setMmenu(false); }} title="Theme">{theme.icon}</button>
-        <button className={s.paused ? 'hot' : ''} onClick={() => admin('pause')} title={s.paused ? 'Resume' : 'Pause'}>{s.paused ? '▶️' : '⏸️'}</button>
-        <button onClick={() => admin('skip')} title="Skip / next round">⏭️</button>
-        <button onClick={() => admin('hint')} title="Give a hint now">💡</button>
-        <button onClick={() => admin('time')} title="Add 15 seconds">⏰</button>
-        <button onClick={fullscreen} title="Full screen">⛶</button>
+      <nav className="bar" style={{ '--bw': tbN <= 7 ? 30 : tbN <= 9 ? 26 : 22 }}>
+        <BrandTitle text={L.title} on={L.showTitle} dep={L.font + L.titleFont + L.fontScale + L.theme + tbN} />
+        {tb.mode && <button className={'mode m-' + pm} onClick={() => { setMmenu(m => !m); setMenu(false); }} title="Mode: Test / Live / Offline">{MODES[pm][0]}<small>{MODES[pm][1]}</small></button>}
+        {tb.theme && <button onClick={() => { setMenu(m => !m); setMmenu(false); }} title="Theme">{theme.icon}</button>}
+        {tb.pause && <button className={s.paused ? 'hot' : ''} onClick={() => admin('pause')} title={s.paused ? 'Resume' : 'Pause'}>{s.paused ? '▶️' : '⏸️'}</button>}
+        {tb.skip && <button onClick={() => admin('skip')} title="Skip / next round">⏭️</button>}
+        {tb.hint && <button onClick={() => admin('hint')} title="Give a hint now">💡</button>}
+        {tb.time && <button onClick={() => admin('time')} title="Add 15 seconds">⏰</button>}
+        {tb.cats && <button className={cfg?.mode === 'specific' ? 'hot' : ''} onClick={() => (panel === 'cats' ? closePanel() : openPanel('cats'))} title="Categories">🗂️</button>}
+        {tb.answer && <button className={cfg && !cfg.showAnswerWin ? 'hot' : ''} onClick={toggleAnswer} title={cfg?.showAnswerWin ? 'Correct answer is shown when guessed (tap to hide)' : 'Correct answer is hidden when guessed (tap to show)'}>{cfg && !cfg.showAnswerWin ? '🙈' : '👁️'}</button>}
+        {tb.sound && <button className={L.sound ? 'hot' : ''} onClick={() => setLocal('sound', !L.sound)} title="Sound on/off">{L.sound ? '🔔' : '🔕'}</button>}
+        {tb.full && <button onClick={fullscreen} title="Full screen">⛶</button>}
         <button className={panel ? 'hot' : ''} onClick={() => (panel ? closePanel() : openPanel('look'))} title="Settings">⚙️</button>
       </nav>
 
@@ -405,11 +441,25 @@ export default function App() {
         return (
           <div className="panel">
             <div className="tabs">
-              {[['look', '🎨 Look'], ['layout', '📐 Layout'], ['game', '🎮 Game'], ['cats', '🗂 Categories'], ['live', '🔴 Live'], ['admin', '🛠 Admin']].map(([k, n]) => (
+              {[['look', '🎨 Look'], ['layout', '📐 Layout'], ['bar', '🧰 Toolbar'], ['game', '🎮 Game'], ['cats', '🗂 Categories'], ['live', '🔴 Live'], ['admin', '🛠 Admin']].map(([k, n]) => (
                 <button key={k} className={panel === k ? 'on' : ''} onClick={() => setPanel(k)}>{n}</button>))}
               <button onClick={closePanel} title="Close without saving">✕</button>
             </div>
             {(panel === 'look' || panel === 'layout') && FIELDS[panel].map(f => <Field key={f.k} f={f} v={draft.L[f.k]} set={setDL} />)}
+            {panel === 'bar' && (
+              <>
+                <p className="note"><b>Choose which buttons appear at the top.</b> The game name always stays. ⚙️ Settings is always shown so you can never lock yourself out. Press Save &amp; Apply below.</p>
+                {TB.map(([k, ic, name]) => {
+                  const cur = Array.isArray(draft.L.toolbar) ? draft.L.toolbar : TB_DEFAULT;
+                  return (<label className="fld toggle" key={k}><span>{ic} {name}</span>
+                    <input type="checkbox" checked={cur.includes(k)} onChange={e => setDL('toolbar', e.target.checked ? TB.map(x => x[0]).filter(x => x === k || cur.includes(x)) : cur.filter(x => x !== k))} /></label>);
+                })}
+                <div className="seg">
+                  <button onClick={() => setDL('toolbar', TB.map(x => x[0]))}>✅ Show all</button>
+                  <button onClick={() => setDL('toolbar', [...TB_DEFAULT])}>↩️ Default</button>
+                </div>
+              </>
+            )}
             {panel === 'game' && (dc ? FIELDS.game.map(f => <Field key={f.k} f={f} v={dc[f.k]} set={setDC} />) : <p>Loading…</p>)}
             {panel === 'game' && <p className="note">Press Save &amp; Apply below: the new game settings start with a fresh round.</p>}
             {panel === 'cats' && dc && (() => {

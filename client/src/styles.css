@@ -10,9 +10,10 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden;back
 .hid{visibility:hidden}
 .calm *{animation:none!important;transition:none!important}
 /* HOST TOOLBAR - always visible, big touch targets */
-.bar{position:relative;z-index:30;height:12cqw;padding:0 2cqw;display:flex;align-items:center;justify-content:space-between;gap:1cqw;background:var(--panel);backdrop-filter:blur(6px);border-bottom:.6cqw dashed var(--te);border-radius:0 0 5cqw 5cqw}
+.bar{position:relative;z-index:30;height:12cqw;padding:0 2cqw;display:flex;align-items:center;justify-content:flex-start;gap:1cqw;background:var(--panel);backdrop-filter:blur(6px);border-bottom:.6cqw dashed var(--te);border-radius:0 0 5cqw 5cqw}
 .bar button{flex:1 1 0;min-width:0;max-width:8.6cqw;aspect-ratio:1;padding:0;display:grid;place-items:center;border-radius:35%;border:.5cqw solid var(--te);background:linear-gradient(var(--t1),var(--t2));color:var(--tt);font-size:4.4cqw;line-height:1;cursor:pointer;box-shadow:0 .7cqw 0 var(--te);transition:transform .1s}
-.bar .brand{font-family:var(--tf);flex:0 0 27cqw;min-width:0;max-width:27cqw;font-size:calc(6.4cqw*var(--fs));line-height:1.1;font-weight:400;letter-spacing:.4cqw;text-align:left;white-space:nowrap;overflow:hidden;padding-left:1cqw;color:var(--gold);-webkit-text-stroke:.45cqw var(--te);paint-order:stroke fill;text-shadow:0 .7cqw 0 var(--te),0 1.2cqw 1.6cqw #0003}
+.bar .brand{flex:0 0 calc(var(--bw,30)*1cqw);width:calc(var(--bw,30)*1cqw);min-width:0;height:8.4cqw;display:flex;align-items:center;justify-content:center;padding:0 2cqw;overflow:hidden;border-radius:99px;border:.5cqw solid #fffb;background:linear-gradient(90deg,var(--a1),var(--a2));color:var(--bt);box-shadow:0 .6cqw 0 #0003;font-family:var(--tf);font-weight:400}
+.bar .brand span{display:block;flex:none;font-size:calc(5.6cqw*var(--fs));line-height:1.1;letter-spacing:.3cqw;white-space:nowrap;text-shadow:0 .3cqw 0 #0002}
 .bar button:active{transform:translateY(.6cqw);box-shadow:0 .1cqw 0 var(--te)}
 .bar button.hot{background:linear-gradient(var(--a1),var(--a2));color:var(--bt)}
 /* ZONE 1: title + category */

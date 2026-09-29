@@ -76,6 +76,28 @@ add('SWEETS AND DESSERTS', S("Apple Pie,Banana Split,Tiramisu,Baklava,Churros,Ce
 MAIN = "Rice,Noodles,Fried Rice,Burger,Pizza,Pasta,Sandwich,Salad,Soup,Curry,Stew,Sushi,Tacos,Burrito,Omelette,Sausage,Wings,Steak,Dumplings,Wrap,Pie,Skewers,Porridge,Stir Fry"
 add('FOOD AND DRINK', combo("Chicken,Beef,Lamb,Pork,Fish,Prawn,Squid,Crab,Egg,Cheese,Mushroom,Vegetable,Tofu,Spicy,Garlic,Butter,Teriyaki,Sambal,Satay,Tomato,Lemon Herb,Honey Mustard,Black Pepper,BBQ,Coconut,Thai,Korean,Japanese,Italian,Mexican,Indian,Malay,Vietnamese,Greek", MAIN))
 add('FOOD AND DRINK', S("Nasi Lemak,Roti Canai,Satay,Laksa,Char Kuey Teow,Rendang,Mee Goreng,Nasi Goreng,Teh Tarik,Cendol,Rojak,Curry Mee,Bak Kut Teh,Hokkien Mee,Wantan Mee,Dim Sum,Peking Duck,Pad Thai,Tom Yum,Pho,Banh Mi,Kimchi,Bibimbap,Ramen,Tempura,Takoyaki,Paella,Lasagna,Risotto,Ratatouille,Goulash,Falafel,Hummus,Shawarma,Kebab,Biryani,Tandoori,Naan,Samosa,Guacamole,Nachos,Quesadilla,Fish and Chips,Hot Dog,Fried Chicken,Mac and Cheese,French Toast,Bagel,Pretzel,Popcorn,Peanut Butter,Maple Syrup,Green Tea,Bubble Tea,Iced Coffee,Hot Chocolate,Lemonade,Orange Juice,Coconut Water,Sugarcane Juice,Milk Tea,Espresso,Cappuccino,Latte,Mojito,Smoothie Bowl"))
+
+
+# ---- keep every category at 100+ puzzles: fold small ones into related bigger ones
+add('MUSICAL INSTRUMENTS', S("Lyre,Sackbut,Serpent,Cornett,Shawm,Crumhorn,Rebec,Viol,Theorbo,Clavichord,Spinet,Fortepiano,Harmonium,Ondes Martenot,Waterphone,Glass Harmonica,Rainstick,Guiro,Claves,Cabasa,Vibraslap,Woodblock,Temple Block,Tubular Bells,Steelpan"))
+add('TRANSPORT', S("Snowmobile,Bobsleigh,Dune Buggy,Quad Bike,Moped,Minibus,Coach,Lorry,Barge,Catamaran,Trawler,Icebreaker,Paddle Steamer,Longboat,Outrigger,Rowing Boat,Lifeboat,Ambulance Helicopter,Biplane,Seaplane,Space Capsule,Maglev,Steam Engine,Freight Train,Night Train"))
+MERGE = {'INSECTS': 'ANIMALS', 'CAR AND BIKE BRANDS': 'FAMOUS BRANDS', 'FRUITS': 'FRUITS AND VEGETABLES', 'VEGETABLES': 'FRUITS AND VEGETABLES', 'WEATHER AND NATURE': 'GEOGRAPHY'}
+for a, b in MERGE.items():
+    if a in DB: DB.setdefault(b, {}).update(DB.pop(a))
+
+# ---- WORD POWER: real dictionary words (5-12 letters), grouped by first letter (the category name is a clue for viewers)
+BAD_PRE = ('fuck','shit','cunt','whore','nigg','fagg','bitch','slut','rapist','dildo','penis','vagina','porn','tits','boob','pussy','pussie','bastard','asshole','wank','twat','retard','kike','chink','spick','tranny')
+BAD = set('rape raped rapes raping sexy sexed sexes dicks cocks damned crappy piss pissed negro negroes gooks dyke dykes homos queers whores arse asses bugger buggers'.split())
+words = set()
+for l in open('/usr/share/hunspell/en_US.dic', encoding='utf-8', errors='ignore').read().split('\n')[1:]:
+    w = l.split('/')[0].strip()
+    if re.fullmatch(r'[a-z]{5,12}', w) and w not in BAD and not w.startswith(BAD_PRE): words.add(w)
+by = {}
+for w in sorted(words): by.setdefault(w[0].upper(), []).append(w)
+small = sorted(k for k, v in by.items() if len(v) < 300)
+for k, v in by.items():
+    if k not in small: DB['WORDS STARTING WITH ' + k] = {x.upper(): 1 for x in v}
+if small: DB['WORDS STARTING WITH ' + ', '.join(small[:-1]) + ' OR ' + small[-1]] = {x.upper(): 1 for k in small for x in by[k]}
 print({k: len(v) for k, v in DB.items()})
 OUT = {k: sorted(v) for k, v in DB.items()}
 tot = sum(len(v) for v in OUT.values()); print('categories', len(OUT), 'puzzles', tot)

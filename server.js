@@ -19,15 +19,15 @@ if (fs.existsSync(extraFile)) {
 }
 // 'English words' style catch-all categories are intentionally excluded (too wide / vague)
 const BANNED = /english|common words|random words|dictionary/i;
-const CATS = Object.keys(DB).filter(c => DB[c].length && !BANNED.test(c));
+let CATS = Object.keys(DB).filter(c => DB[c].length && !BANNED.test(c));
 console.log(`Loaded ${CATS.length} categories from ${path.basename(dbFile)}`);
 
 // ---------- host-adjustable game settings ----------
 const DEF = { roundSeconds: +process.env.ROUND_SECONDS || 90, revealSeconds: 10, showAnswer: true, showAnswerWin: true, popupSecs: 8, showLbOverlay: true, lbSecs: 10, minLetters: 5, maxLetters: 20,
   allowMulti: true, spaceless: true, hints: true, hintStart: 40, hintEvery: 10, maxHints: 3,
-  botOn: false, botEvery: 4, botSkill: 80, disabled: [], mode: 'random', picked: [] };
+  wordPercent: 15, botOn: false, botEvery: 4, botSkill: 80, disabled: [], mode: 'random', picked: [] };
 const RANGE = { roundSeconds: [20, 300], revealSeconds: [3, 30], popupSecs: [2, 30], lbSecs: [3, 60], minLetters: [3, 25], maxLetters: [3, 25], hintStart: [10, 90],
-  hintEvery: [3, 60], maxHints: [0, 10], botEvery: [1, 30], botSkill: [0, 100] };
+  hintEvery: [3, 60], maxHints: [0, 10], botEvery: [1, 30], botSkill: [0, 100], wordPercent: [0, 100] };
 // DATA_DIR (optional env): point it at a persistent disk so saved settings survive redeploys
 const DATA_DIR = process.env.DATA_DIR || R('data');
 const SFILE = path.join(DATA_DIR, 'settings.json');   // current settings (Save & Apply)
@@ -35,6 +35,15 @@ const DFILE = path.join(DATA_DIR, 'defaults.json');   // host's own defaults (Sa
 const readJSON = f => { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch { return {}; } };
 const persist = (f, o) => { try { fs.mkdirSync(DATA_DIR, { recursive: true }); fs.writeFileSync(f, JSON.stringify(o)); } catch (e) { console.warn('Could not save ' + f + ': ' + e.message); } };
 let userDef = readJSON(DFILE);
+// host's own categories typed on screen (settings -> My Puzzles): data/custom.json, merged into the database live
+const CUFILE = path.join(DATA_DIR, 'custom.json'); let custom = readJSON(CUFILE);
+const BASE = Object.fromEntries(Object.entries(DB).map(([k, v]) => [k, v]));
+function applyCustom() {
+  for (const k of Object.keys(DB)) if (!BASE[k]) delete DB[k];
+  for (const [k, v] of Object.entries(custom)) DB[k] = [...new Set([...(BASE[k] || []), ...v])];
+  CATS = Object.keys(DB).filter(c => DB[c].length && !BANNED.test(c));
+}
+applyCustom();
 let cfg = { ...DEF, ...userDef, ...readJSON(SFILE) };
 let saveT;
 function applyPatch(p) {
@@ -100,6 +109,8 @@ function pick() {
   const base = chosen.length ? chosen : CATS.filter(c => !cfg.disabled.includes(c));   // specific = only picked; random = every enabled category
   let pools = base.map(c => [c, DB[c].filter(okAns)]).filter(([, l]) => l.length);
   if (!pools.length) pools = (base.length ? base : CATS).map(c => [c, DB[c]]);       // letter filters too strict -> ignore them
+  const isW = c => c.startsWith('WORDS STARTING WITH'), wp = pools.filter(([c]) => isW(c)), tp = pools.filter(([c]) => !isW(c));
+  if (wp.length && tp.length) pools = Math.random() * 100 < (cfg.wordPercent ?? 15) ? wp : tp;   // Word Power = one share, themed categories keep the rest
   let [cat, list] = pools[Math.floor(Math.random() * pools.length)];
   if (pools.length > 1 && cat === lastCat) [cat, list] = pools.filter(([c]) => c !== lastCat)[Math.floor(Math.random() * (pools.length - 1))];
   lastCat = cat;
@@ -125,7 +136,7 @@ const everyone = () => [...users.values()].filter(u => u.score > 0).sort((a, b) 
   .map(u => ({ user: u.user, pic: u.pic, score: u.score, wins: u.wins }));
 const snap = () => ({ ...state, paused, peek: playMode === 'test' && current ? current.answer : '', remaining: Math.max(0, Math.ceil((phaseEnd - (paused ? pausedAt : Date.now())) / 1000)), leaderboard: top(),
   full: state.phase === 'reveal' && state.winner ? everyone() : [] });
-const pub = () => ({ cfg, cats: CATS, pinRequired: !!ADMIN_PIN, hasDefaults: Object.keys(userDef).length > 0,
+const pub = () => ({ cfg, cats: CATS, custom, pinRequired: !!ADMIN_PIN, hasDefaults: Object.keys(userDef).length > 0,
   playMode, tt: { status: ttStatus, user: ttCreds().name, hasKey: !!ttCreds().key, keyHint: keyHint(ttCreds().key) } });
 
 const app = express(), server = http.createServer(app), io = new Server(server);
@@ -300,6 +311,13 @@ io.on('connection', socket => {
         if (m.factory) { userDef = {}; try { fs.unlinkSync(DFILE); } catch {} }
         cfg = { ...DEF, ...JSON.parse(JSON.stringify(userDef)) }; persist(SFILE, cfg);
         io.emit('settings', pub()); startRound(); break;
+      case 'custom': {   // create / replace / delete a host category
+        const name = String(m.name || '').toUpperCase().replace(/[^A-Z0-9 &]/g, '').replace(/\s+/g, ' ').trim().slice(0, 30);
+        if (!name) return done({ ok: false, error: 'Type a category name' });
+        const words = [...new Set(String(m.words || '').split('\n').map(x => x.toUpperCase().replace(/[^A-Z ]/g, '').replace(/\s+/g, ' ').trim()).filter(x => x.replace(/ /g, '').length >= 3 && x.length <= 30))].slice(0, 5000);
+        if (words.length) custom[name] = words; else delete custom[name];
+        persist(CUFILE, custom); applyCustom(); io.emit('settings', pub()); return done({ ok: true, count: words.length });
+      }
       case 'mode': setMode(m.mode); break;
       case 'tiktok': {   // username + Euler key typed on screen (settings -> Live tab)
         const next = { ...ttSaved };

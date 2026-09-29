@@ -78,3 +78,8 @@ Puzzle letters and the timer sit higher on the screen, giving the bottom leaderb
 ## Puzzle database & phone fit (update)
 - `data/puzzles.full.json` is built offline by `python3 tools/build_puzzles.py` (needs `pip install babel matplotlib`); add more seeds to that script and re-run. The server merges `puzzles.extra.json` on top automatically.
 - The 9:16 stage is now sized from the real visible viewport (`client/src/main.jsx`), so phone browser bars, notches, rotation and fullscreen no longer push the toolbar or bottom area off-screen.
+
+## New in this update
+- **Word Power**: 26 dictionary categories ("WORDS STARTING WITH B" ...) hold ~50k real words. In Random mix they get a set share of rounds (Game tab -> Word Power share, default 15%) so themed categories still appear often. Set 0% to switch them off.
+- **Live login window**: switching to Live opens a centred window for TikTok username + Euler key + Save & Connect (still available in Settings -> Live). Turn it off in Look -> "Show the TikTok login window".
+- **More customizing**: 5 colour pickers (backgrounds, accents, text) under Look, the Word Power share, the login-window toggle, and a new **✍️ My Puzzles** tab to create your own categories (saved in `data/custom.json`, use DATA_DIR to persist). All new options can also be pinned to the toolbar.

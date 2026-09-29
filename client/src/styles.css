@@ -159,3 +159,15 @@ h1{flex:none;max-width:100%;font-size:calc(7.4cqw*var(--fs));line-height:1.15;fo
 .bar .trow button{flex:1 1 0;width:auto;min-width:0;aspect-ratio:auto;height:calc(var(--bs,8)*1cqw);border-radius:30%}
 .bar button.set{flex:0 0 calc(var(--bs,8)*1cqw)}
 .bar .brow button.set{width:9cqw;flex:0 0 9cqw;font-size:5cqw}
+
+/* Live login window + colour pickers + textarea */
+.livepop{position:absolute;inset:0;z-index:60;display:grid;place-items:center;padding:4cqw;background:#0009;backdrop-filter:blur(3px)}
+.livecard{width:min(88cqw,100%);max-height:100%;overflow:auto;display:flex;flex-direction:column;gap:2.4cqw;padding:5cqw;border-radius:5cqw;background:var(--bg1);color:var(--text);border:.6cqw solid var(--te);box-shadow:0 2cqw 8cqw #000a;font-size:3.8cqw}
+.livecard h3{font-size:5.6cqw;text-align:center}.livecard small{text-align:center;opacity:.85}
+.livecard label{display:flex;flex-direction:column;gap:1cqw;font-weight:700}
+.livecard input{height:10cqw;padding:0 3cqw;font:inherit;border-radius:3cqw;border:.5cqw solid var(--te);background:#fffe;color:#333;min-width:0}
+.livecard button{height:10.5cqw;border-radius:99px;border:.5cqw solid var(--te);background:var(--panel);color:var(--text);font:inherit;font-weight:800;cursor:pointer}
+.livecard button.go{background:#e5213b;color:#fff;border-color:#fff8}
+.livecard .err{text-align:center;color:var(--gold)}
+.clr{display:flex;gap:8px;align-items:center}.clr input{width:48px;height:32px;padding:0;border:0;background:none}.clr button{padding:6px 10px;border-radius:8px;border:1px solid var(--te);background:var(--panel);color:var(--text);cursor:pointer}
+textarea{width:100%;padding:8px;border-radius:8px;border:1px solid var(--te);background:var(--bg1);color:var(--text);font:inherit;resize:vertical}

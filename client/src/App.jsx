@@ -24,7 +24,7 @@ const TB_DEFAULT = ['mode', 'theme', 'pause', 'skip', 'hint', 'time', 'full'];
 const DEFAULTS = { theme: 'cotton', font: 'cute', titleFont: 'lilita', toolbar: TB_DEFAULT, fontScale: 100, tileShape: 'rounded', tileScale: 100, title: 'UNSCRAMBLE',
   footer: 'Type the correct word(s) in the chat to win!', reduceMotion: false, showTitle: true, showCategory: true, showTimer: true,
   showHint: true, showPopup: true, showLb: true, showFeed: true, showFooter: true, feedSecs: 3, lbRows: 5,
-  z1: 9, zg: 8, z2: 34, z4: 14, sound: false, volume: 60, playerName: 'Me' };
+  z1: 9, zg: 8, z2: 34, z4: 14, sound: false, volume: 60, playerName: 'Me', cBg1: '', cBg2: '', cA1: '', cA2: '', cTxt: '', liveAsk: true };
 const MODES = {
   test: ['🧪', 'TEST', 'Test mode', 'Try games & upgrades. TikTok chat is OFF. Use the guess box, ✅ (solve), 💬 (fake chat) and 🤖 (auto-guessing bot).'],
   live: ['🔴', 'LIVE', 'Live mode', 'Go live on TikTok. Reads the TikTok chat. Guess box is hidden.'],
@@ -53,7 +53,9 @@ const FIELDS = {
     rg('tileScale', 'Max tile size', 60, 100, 5, '%'),
     { k: 'title', l: 'Title text', t: 'text' }, { k: 'footer', l: 'Footer text', t: 'text' },
     { k: 'playerName', l: 'My name (Test / Offline guesses)', t: 'text' },
-    tg('reduceMotion', 'Reduce animations')],
+    tg('reduceMotion', 'Reduce animations'),
+    { k: 'cBg1', l: 'Background colour 1 (Reset = theme)', t: 'color' }, { k: 'cBg2', l: 'Background colour 2', t: 'color' }, { k: 'cA1', l: 'Accent colour 1 (banners, buttons)', t: 'color' }, { k: 'cA2', l: 'Accent colour 2', t: 'color' }, { k: 'cTxt', l: 'Text colour', t: 'color' },
+    tg('liveAsk', 'Show the TikTok login window when switching to Live')],
   layout: [
     tg('showTitle', 'Show title'), tg('showCategory', 'Show category banner'), tg('showTimer', 'Show timer'), tg('showHint', 'Show hint letters'),
     tg('showFeed', 'Show guess window (one guess at a time, under the category)'), tg('showPopup', 'Show winner window in the centre'), tg('showLb', 'Show mini leaderboard (bottom)'), tg('showFooter', 'Show footer'),
@@ -67,7 +69,7 @@ const FIELDS = {
     tg('showAnswer', '⌛ Show the answer when time runs out (nobody solved it)'), rg('revealSeconds', 'Reveal time when nobody solved it', 3, 30, 1, 's'),
     rg('minLetters', 'Min letters', 3, 25), rg('maxLetters', 'Max letters', 3, 25), tg('allowMulti', 'Allow multi-word puzzles'),
     tg('spaceless', 'Accept answer without spaces'), tg('hints', 'Auto hints (reveal letters)'), rg('hintStart', 'First hint at', 10, 90, 5, '% of round'),
-    rg('hintEvery', 'Next hint every', 3, 60, 1, 's'), rg('maxHints', 'Max hints', 0, 10),
+    rg('hintEvery', 'Next hint every', 3, 60, 1, 's'), rg('maxHints', 'Max hints', 0, 10), rg('wordPercent', 'Word Power (dictionary) share of rounds in Random mix', 0, 100, 5, '%'),
     tg('botOn', '🤖 Test bot guesses by itself (Test mode only)'), rg('botEvery', 'Bot guesses every', 1, 30, 1, 's'), rg('botSkill', 'Chance the bot solves a round', 0, 100, 5, '%')]
 };
 
@@ -211,6 +213,7 @@ function Field({ f, v, set }) {
   const c = f.t === 'toggle' ? <input type="checkbox" checked={!!v} onChange={e => set(f.k, e.target.checked)} />
     : f.t === 'range' ? <input type="range" min={f.min} max={f.max} step={f.step || 1} value={v} onChange={e => set(f.k, +e.target.value)} />
     : f.t === 'select' ? <select value={v} onChange={e => set(f.k, e.target.value)}>{f.o.map(([a, b]) => <option key={a} value={a}>{b}</option>)}</select>
+    : f.t === 'color' ? <span className="clr"><input type="color" value={v || '#ffffff'} onChange={e => set(f.k, e.target.value)} /><button type="button" onClick={() => set(f.k, '')}>Reset</button></span>
     : <input type="text" value={v} maxLength={60} onChange={e => set(f.k, e.target.value)} />;
   return <label className={'fld ' + f.t}><span>{f.l}{f.t === 'range' && <b> {v}{f.u}</b>}</span>{c}</label>;
 }
@@ -229,13 +232,14 @@ export default function App() {
   const [menu, setMenu] = useState(false), [mmenu, setMmenu] = useState(false), [panel, setPanel] = useState(null), [pop, setPop] = useState(null);
   const [pm, setPm] = useState('test'), [tt, setTt] = useState({ status: 'off', user: '' }), [fb, setFb] = useState('');
   const [ttUser, setTtUser] = useState(''), [ttKey, setTtKey] = useState(''), [ttMsg, setTtMsg] = useState('');
+  const [livePop, setLivePop] = useState(false), [custom, setCustom] = useState({}), [mineName, setMineName] = useState(''), [mineText, setMineText] = useState('');
   const gref = useRef(null);
   const [pin, setPin] = useState(() => localStorage.getItem('ul-pin') || ''), [msg, setMsg] = useState('');
   const deadline = useRef(0);
 
   useEffect(() => {
     socket.on('state', st => { setS(st); deadline.current = Date.now() + st.remaining * 1000; setLeft(st.remaining); });
-    socket.on('settings', x => { setCfg(x.cfg); setCats(x.cats); setPinReq(x.pinRequired); setHasDef(!!x.hasDefaults); setPm(x.playMode || 'test'); setTt(x.tt || { status: 'off', user: '' }); });
+    socket.on('settings', x => { setCfg(x.cfg); setCats(x.cats); setPinReq(x.pinRequired); setCustom(x.custom || {}); setHasDef(!!x.hasDefaults); setPm(x.playMode || 'test'); setTt(x.tt || { status: 'off', user: '' }); });
     const g = gwT.current, MIN_MS = 1200;   // a guess card is shown at least 1.2s before the next one may replace it
     const show = m => {
       g.shownAt = Date.now(); setGw(m);
@@ -295,7 +299,7 @@ export default function App() {
   const saveTikTok = (goLive, clearKey = false) => {   // Live tab: username + Euler key -> server
     socket.emit('admin', { a: 'tiktok', pin, username: ttUser.trim(), apiKey: ttKey, clearKey }, r => {
       if (r && !r.ok) { setTtMsg('❌ ' + r.error + ' (type the Admin PIN in the Admin tab)'); return; }
-      setTtKey(''); setTtMsg(clearKey ? '🗑 Key removed' : '✅ Saved');
+      setTtKey(''); if (!clearKey) setLivePop(false); setTtMsg(clearKey ? '🗑 Key removed' : '✅ Saved');
       if (goLive && pm !== 'live') { admin('mode', { mode: 'live' }); flash('🔴 Live mode - connecting to TikTok…'); closePanel(); }
       else setTimeout(() => setTtMsg(''), 2500);
     });
@@ -313,7 +317,7 @@ export default function App() {
       if (r && !r.ok) { flash(r.error); if (pinReq) openPanel('admin'); } else flashFb(r?.correct ? 'yes' : 'no');
     });
   };
-  const setMode = m => { setMmenu(false); admin('mode', { mode: m }); flash(MODES[m][0] + ' ' + MODES[m][2] + ' - fresh round'); };
+  const setMode = m => { setMmenu(false); admin('mode', { mode: m }); if (m === 'live' && L.liveAsk !== false) { setTtUser(u => u || tt.user || ''); setLivePop(true); } flash(MODES[m][0] + ' ' + MODES[m][2] + ' - fresh round'); };
   const toggleAnswer = () => {   // quick switch for "show the answer when guessed correctly": takes effect at the end of the current round
     const v = !cfg?.showAnswerWin; setCfg(c => ({ ...c, showAnswerWin: v })); setDraft(d => (d?.cfg ? { ...d, cfg: { ...d.cfg, showAnswerWin: v } } : d));
     admin('set', { patch: { showAnswerWin: v } }); flash(v ? '👁️ Correct answer will be shown' : '🙈 Correct answer will be hidden');
@@ -342,7 +346,7 @@ export default function App() {
   // Mini leaderboard: row height is calculated from the room the zone really has, so rows shrink to fit and can never spill into the footer.
   const availLb = z3 * CQ - 2, nRows = Math.max(1, Math.min(L.lbRows, Math.floor(availLb / 5.5)));
   const lh = Math.min(10, availLb / nRows) - 1;
-  const style = { ...theme.v, '--fs': L.fontScale / 100, '--ff': FONTS[L.font][1], '--tf': (TFONTS[L.titleFont] || TFONTS.lilita)[1] === 'inherit' ? FONTS[L.font][1] : (TFONTS[L.titleFont] || TFONTS.lilita)[1], '--tr': RADIUS[L.tileShape], '--lh': lh, '--barH': bl.H, gridTemplateRows: `auto minmax(0,${z1}fr) minmax(0,${zg}fr) minmax(0,${z2}fr) minmax(0,${z3}fr) minmax(0,${z4}fr)` };
+  const style = { ...theme.v, ...(L.cBg1 && { '--bg1': L.cBg1 }), ...(L.cBg2 && { '--bg2': L.cBg2 }), ...(L.cA1 && { '--a1': L.cA1 }), ...(L.cA2 && { '--a2': L.cA2 }), ...(L.cTxt && { '--text': L.cTxt }), '--fs': L.fontScale / 100, '--ff': FONTS[L.font][1], '--tf': (TFONTS[L.titleFont] || TFONTS.lilita)[1] === 'inherit' ? FONTS[L.font][1] : (TFONTS[L.titleFont] || TFONTS.lilita)[1], '--tr': RADIUS[L.tileShape], '--lh': lh, '--barH': bl.H, gridTemplateRows: `auto minmax(0,${z1}fr) minmax(0,${zg}fr) minmax(0,${z2}fr) minmax(0,${z3}fr) minmax(0,${z4}fr)` };
   const hid = on => (on ? '' : ' hid');
   const fval = it => (it.src === 'cfg' ? cfg?.[it.f.k] : L[it.f.k]);
   const fset = (it, v) => { if (it.src === 'cfg') { setCfg(c => ({ ...c, [it.f.k]: v })); admin('set', { patch: { [it.f.k]: v } }); } else setLocal(it.f.k, v); };
@@ -484,6 +488,19 @@ export default function App() {
       )}
 
       {toast && <div className="toast">{toast}</div>}
+      {livePop && pm === 'live' && (
+        <div className="livepop" onClick={e => e.target === e.currentTarget && setLivePop(false)}>
+          <div className="livecard">
+            <h3>🔴 Go LIVE on TikTok</h3>
+            <small>{TT_TEXT[tt.status] || ''}</small>
+            <label>TikTok username (without @)<input type="text" value={ttUser} placeholder="for example: myname" autoCapitalize="none" autoCorrect="off" onChange={e => setTtUser(e.target.value)} /></label>
+            <label>Euler key {tt.hasKey && <b>(saved: {tt.keyHint})</b>}<input type="password" value={ttKey} autoComplete="off" placeholder={tt.hasKey ? 'Saved - leave empty to keep it' : 'Paste your Euler key (if needed)'} onChange={e => setTtKey(e.target.value)} /></label>
+            {pinReq && <label>Admin PIN<input type="password" value={pin} onChange={e => { setPin(e.target.value); localStorage.setItem('ul-pin', e.target.value); }} /></label>}
+            <button className="go" onClick={() => saveTikTok(true)}>🔴 Save &amp; Connect</button>
+            <button onClick={() => setLivePop(false)}>Not now</button>
+            {ttMsg && <p className="err">{ttMsg}</p>}
+          </div>
+        </div>)}
 
       {/* SETTINGS PANEL - edits a draft; nothing changes until Save & Apply */}
       {panel && draft && (() => {
@@ -491,7 +508,7 @@ export default function App() {
         return (
           <div className="panel">
             <div className="tabs">
-              {[['look', '🎨 Look'], ['layout', '📐 Layout'], ['bar', '🧰 Toolbar'], ['game', '🎮 Game'], ['cats', '🗂 Categories'], ['live', '🔴 Live'], ['admin', '🛠 Admin']].map(([k, n]) => (
+              {[['look', '🎨 Look'], ['layout', '📐 Layout'], ['bar', '🧰 Toolbar'], ['game', '🎮 Game'], ['cats', '🗂 Categories'], ['live', '🔴 Live'], ['mine', '✍️ My Puzzles'], ['admin', '🛠 Admin']].map(([k, n]) => (
                 <button key={k} className={panel === k ? 'on' : ''} onClick={() => setPanel(k)}>{n}</button>))}
               <button onClick={closePanel} title="Close without saving">✕</button>
             </div>
@@ -557,6 +574,16 @@ export default function App() {
                 <p className="note">Status: {pm === 'live' ? (TT_TEXT[tt.status] || '…') : 'not in Live mode yet'}{pm === 'live' && tt.user && tt.status !== 'nouser' ? ' (@' + tt.user + ')' : ''}</p>
                 <p className="note">⚠️ You must already be LIVE on TikTok, otherwise it keeps retrying every 15 seconds.</p>
                 {!pinReq && <p className="note">🔒 Tip: add an ADMIN_PIN in Render (Environment tab) so nobody else can change these.</p>}
+              </>
+            )}
+            {panel === 'mine' && (
+              <>
+                <p className="note"><b>Your own puzzles.</b> Type a category name and one answer per line (letters and spaces). Saved on the server straight away; an existing name is replaced. Leave the answers empty and save to delete a category.</p>
+                <label className="fld text"><span>Category name</span><input type="text" value={mineName} maxLength={30} onChange={e => setMineName(e.target.value)} /></label>
+                <label className="fld text"><span>Answers (one per line)</span><textarea rows={8} value={mineText} onChange={e => setMineText(e.target.value)} /></label>
+                <button className="act go" onClick={() => socket.emit('admin', { a: 'custom', pin, name: mineName, words: mineText }, r => setTtMsg(r && r.ok ? 'Saved ' + r.count + ' answers' : 'Error: ' + (r && r.error)))}>💾 Save my category</button>
+                {Object.entries(custom).map(([n, l]) => <div key={n} className="fld"><span>{n} ({l.length})</span><span><button className="act" onClick={() => { setMineName(n); setMineText(l.join('\n')); }}>Edit</button></span></div>)}
+                {ttMsg && <p className="err">{ttMsg}</p>}
               </>
             )}
             {panel === 'admin' && (

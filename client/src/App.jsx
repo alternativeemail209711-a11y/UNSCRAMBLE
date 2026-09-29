@@ -40,7 +40,7 @@ const TDEF = { tYarn: true, tFont: 'same', tWt: '700', tFs: 64, tTxt: '', tBg1: 
 const DEFAULTS = { theme: DEFAULT_THEME, font: 'cute', titleFont: 'fredoka', toolbar: TB_DEFAULT, fontScale: 100, tileShape: 'rounded', tileScale: 100, title: 'WORD SHUFFLE', cTitle: '',
   footer: 'Type the correct word(s) in the chat to win!', reduceMotion: false, showTitle: true, showCategory: true, showTimer: true,
   showHint: true, showPopup: true, showLb: true, showFeed: true, showFooter: true, feedSecs: 3, lbRows: 5,
-  z1: 9, zg: 8, z2: 34, z4: 14, sound: false, volume: 60, playerName: 'Me', cBg1: '', cBg2: '', cA1: '', cA2: '', cTxt: '', liveAsk: true, showNext: true, showChat: true, chatW: 48, ...WDEF, ...TDEF };
+  z1: 9, zg: 8, z2: 34, z4: 14, sound: false, volume: 60, playerName: 'Me', cBg1: '', cBg2: '', cA1: '', cA2: '', cTxt: '', liveAsk: true, showNext: true, showChat: true, chatW: 50, ...WDEF, ...TDEF };
 const MODES = {
   test: ['🧪', 'TEST', 'Test mode', 'Try games & upgrades. TikTok chat is OFF. Use the guess box, ✅ (solve), 💬 (fake chat) and 🤖 (auto-guessing bot).'],
   live: ['🔴', 'LIVE', 'Live mode', 'Go live on TikTok. Reads the TikTok chat. Guess box is hidden.'],
@@ -59,6 +59,7 @@ const readSaved = key => {
     const kv = localStorage.getItem('ws-knit-v');
     if (!kv) { o = { ...o }; KNIT_KEYS.forEach(k => delete o[k]); }                       // first time: old colours/fonts are dropped so the knitting look shows
     else if (kv === '1' && KNIT_RENAME[o.theme]) o = { ...o, theme: KNIT_RENAME[o.theme] };   // 2nd version: wool themes were renamed knit_...
+    if (kv !== '3') { o = { ...o }; delete o.chatW; }                                          // 3rd version: new chat/leaderboard layout uses the new default width
   } catch { /* ignore */ }
   return o;
 };
@@ -66,7 +67,7 @@ const markMigrated = () => {
   try {
     if (localStorage.getItem('ul-layout-v') !== LAYOUT_V) { localStorage.setItem('ul-defaults', JSON.stringify(readSaved('ul-defaults'))); localStorage.setItem('ul-settings', JSON.stringify(readSaved('ul-settings'))); localStorage.setItem('ul-layout-v', LAYOUT_V); }
     if (localStorage.getItem('ul-title-v') !== '1') { localStorage.setItem('ul-defaults', JSON.stringify(readSaved('ul-defaults'))); localStorage.setItem('ul-settings', JSON.stringify(readSaved('ul-settings'))); localStorage.setItem('ul-title-v', '1'); }
-    if (localStorage.getItem('ws-knit-v') !== '2') { localStorage.setItem('ul-defaults', JSON.stringify(readSaved('ul-defaults'))); localStorage.setItem('ul-settings', JSON.stringify(readSaved('ul-settings'))); localStorage.setItem('ws-knit-v', '2'); }
+    if (localStorage.getItem('ws-knit-v') !== '3') { localStorage.setItem('ul-defaults', JSON.stringify(readSaved('ul-defaults'))); localStorage.setItem('ul-settings', JSON.stringify(readSaved('ul-settings'))); localStorage.setItem('ws-knit-v', '3'); }
   } catch { /* ignore */ }
 };
 const loadDefaults = () => ({ ...DEFAULTS, ...readSaved('ul-defaults') });
@@ -140,6 +141,8 @@ const tileVars = l => {
   v['--tgl'] = 'linear-gradient(#0000,#0000)';   // no shiny highlight on the letter boxes
   return v;
 };
+const lumOf = c => { const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(String(c || '').trim()); if (!m) return 1; let h = m[1]; if (h.length === 3) h = h.split('').map(x => x + x).join(''); const [r, g, b] = [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16) / 255); return 0.299 * r + 0.587 * g + 0.114 * b; };
+const rowVars = (l, th) => { const dark = lumOf(l.cBg1 || th.v['--bg1']) < 0.4; return dark ? { '--rowbg': 'rgba(0,0,0,.42)', '--rowtx': '#fff' } : { '--rowbg': 'rgba(255,255,255,.94)', '--rowtx': 'var(--text)' }; };   // chat + leaderboard rows: solid, high-contrast cards on every theme
 const yarnOn = l => l.tYarn !== false && !l.tBg1 && !l.tBg2;   // multicolour yarn letter boxes (only while no custom box colour is chosen)
 const themeVars = l => ({ ...(THEMES[l.theme] || THEMES[DEFAULT_THEME]).v, ...(l.cBg1 && { '--bg1': l.cBg1 }), ...(l.cBg2 && { '--bg2': l.cBg2 }), ...(l.cA1 && { '--a1': l.cA1 }), ...(l.cA2 && { '--a2': l.cA2 }), ...(l.cTxt && { '--text': l.cTxt }) });
 const winPos = (l, p) => { const x = l[p + 'X'], y = l[p + 'Y'], sc = l[p + 'Sc'], op = l[p + 'Op']; return { transform: x || y || sc !== 100 ? `translate(${x}cqw, ${y}cqh) scale(${sc / 100})` : 'none', opacity: op / 100 }; };
@@ -469,7 +472,7 @@ export default function App() {
   // Mini leaderboard: row height is calculated from the room the zone really has, so rows shrink to fit and can never spill into the footer.
   const availLb = z3 * CQ - 2, nRows = Math.max(1, Math.min(L.lbRows, Math.floor(availLb / 5.5)));
   const lh = Math.min(10, availLb / nRows) - 1;
-  const style = { ...themeVars(L), ...tileVars(L), ...(L.cTitle && { '--tcol': L.cTitle }), '--fs': L.fontScale / 100, '--ff': FONTS[L.font][1], '--tw': L.titleFont === 'fredoka' ? 700 : 400, '--tf': (TFONTS[L.titleFont] || TFONTS.lilita)[1] === 'inherit' ? FONTS[L.font][1] : (TFONTS[L.titleFont] || TFONTS.lilita)[1], '--tr': RADIUS[L.tileShape], '--lh': lh, '--barH': bl.H, gridTemplateRows: `auto minmax(0,${z1}fr) minmax(0,${zg}fr) minmax(0,${z2}fr) minmax(0,${z3}fr) minmax(0,${z4}fr)` };
+  const style = { ...themeVars(L), ...rowVars(L, theme), ...tileVars(L), ...(L.cTitle && { '--tcol': L.cTitle }), '--fs': L.fontScale / 100, '--ff': FONTS[L.font][1], '--tw': L.titleFont === 'fredoka' ? 700 : 400, '--tf': (TFONTS[L.titleFont] || TFONTS.lilita)[1] === 'inherit' ? FONTS[L.font][1] : (TFONTS[L.titleFont] || TFONTS.lilita)[1], '--tr': RADIUS[L.tileShape], '--lh': lh, '--barH': bl.H, gridTemplateRows: `auto minmax(0,${z1}fr) minmax(0,${zg}fr) minmax(0,${z2}fr) minmax(0,${z3}fr) minmax(0,${z4}fr)` };
   const hid = on => (on ? '' : ' hid');
   const fval = it => (it.src === 'cfg' ? cfg?.[it.f.k] : L[it.f.k]);
   const fset = (it, v) => { if (it.src === 'cfg') { setCfg(c => ({ ...c, [it.f.k]: v })); admin('set', { patch: { [it.f.k]: v } }); } else setLocal(it.f.k, v); };
@@ -575,6 +578,7 @@ export default function App() {
       {/* ZONE 3 - mini leaderboard */}
       <section className={'z z3' + (L.showChat ? ' split' : '')} style={{ '--lw': 100 - L.chatW + 'fr', '--cw': L.chatW + 'fr' }}>
         <div className={'lb' + hid(L.showLb)}>
+          {rows.length === 0 && <div className="chempty">🧶 Winners appear here</div>}
           {rows.map((p, i) => (
             <div className="lbrow" key={p.user}>
               <span className="rk">{i < 3 ? MEDALS[i] : i + 1}</span>
@@ -589,8 +593,8 @@ export default function App() {
             {chat.length === 0 && <div className="chempty">💬 Live chat</div>}
             {chat.slice(-nRows).map(m => (
               <div className={'chrow' + (m.ok ? ' ok' : '')} key={m.id}>
-                <Avatar pic={m.pic} name={m.user} size="calc(var(--lh)*.7cqw)" />
-                <span className="ctx"><b>@{m.user}</b> {m.text}</span>
+                <Avatar pic={m.pic} name={m.user} size="calc(var(--lh)*.78cqw)" />
+                <div className="cbody"><span className="cn">@{m.user}</span><span className="ctx">{m.ok ? '✅ ' : ''}{m.text}</span></div>
               </div>
             ))}
           </div>

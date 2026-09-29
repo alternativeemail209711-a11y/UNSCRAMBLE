@@ -27,6 +27,7 @@ The whole game now wears the same knitting look as your platform:
 
 You do NOT need to change anything in the code.
 Letter boxes are flat yarn colour: the shiny highlight was removed.
+Chat and leaderboard rows are now solid, high-contrast cards: the chat shows the @name in small text with the message bigger underneath; the leaderboard has a medal, picture, name and a coloured score badge.
 
 
 HOW TO DEPLOY (same way as before)

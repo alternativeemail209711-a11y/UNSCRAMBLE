@@ -301,3 +301,29 @@ html.plainBg{background-image:linear-gradient(160deg,var(--bg1),var(--bg2));back
 .tile.ok{background:linear-gradient(var(--tok1,#C6E8B4),var(--tok2,#7DBB68))!important}
 .yarnTiles .tile{text-shadow:0 calc(var(--t)*.045) 0 rgba(60,35,10,.55)}
 .yarnTiles .tile.ok{text-shadow:none}
+
+/* =====================================================================
+   READABLE CHAT + LEADERBOARD  -  solid cards, dark-on-light (or light-on-dark) text, bigger type
+   ===================================================================== */
+.lbrow,.chrow,.fbrow{background:var(--rowbg,rgba(255,255,255,.94));color:var(--rowtx,var(--text));border:.4cqw dashed var(--te);box-shadow:0 .5cqw 0 rgba(0,0,0,.14)}
+/* leaderboard row: medal | picture | @name | score badge */
+.z3.split .lbrow{gap:1.1cqw;padding:0 1.2cqw 0 .8cqw}
+.lbrow .rk{width:5cqw;font-size:calc(var(--lh)*.5cqw)}
+.lbrow .who b,.fbrow .who b{color:var(--rowtx,var(--text));font-weight:800}
+.lbrow .who b{font-size:calc(var(--lh)*.4cqw*var(--fs))}
+.lbrow .pts,.fbrow .pts{flex:none;display:grid;place-items:center;border-radius:99px;background:linear-gradient(var(--a1),var(--a2));color:var(--bt);font-weight:900;box-shadow:inset 0 0 0 .3cqw #fff7}
+.lbrow .pts{min-width:calc(var(--lh)*.78cqw);height:calc(var(--lh)*.66cqw);padding:0 1.4cqw;font-size:calc(var(--lh)*.4cqw*var(--fs))}
+.fbrow .pts{min-width:calc(var(--rh)*.9cqw);height:calc(var(--rh)*.72cqw);padding:0 2cqw;font-size:calc(var(--rh)*.44cqw*var(--fs))}
+.fbrow.new{background:linear-gradient(90deg,var(--a1),var(--a2));border-style:solid}
+.fbrow.new .who b{color:var(--bt)}
+.fbrow.new .pts{background:#fff;color:#3b2a14}
+/* chat row: small @name on top, bigger message underneath */
+.chrow{gap:1.3cqw;padding:0 1.6cqw 0 .8cqw}
+.cbody{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;line-height:1.12}
+.cn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:calc(var(--lh)*.29cqw*var(--fs));font-weight:800;color:var(--link)}
+.chrow .ctx{flex:none;font-size:calc(var(--lh)*.43cqw*var(--fs));font-weight:800;color:var(--rowtx,var(--text))}
+.chrow.ok{background:linear-gradient(#6FAA5C,#3F7A31);border:.4cqw solid #2C5A20}
+.chrow.ok .cn,.chrow.ok .ctx{color:#fff}
+/* empty states */
+.chempty{margin:auto;padding:1.6cqw 4cqw;border-radius:99px;background:var(--rowbg,rgba(255,255,255,.94));color:var(--rowtx,var(--text));border:.4cqw dashed var(--te);font-weight:800;font-size:3.6cqw;opacity:.85;white-space:nowrap}
+.z3.split .lb .chempty{font-size:3.3cqw;padding:1.4cqw 3cqw}

@@ -11,8 +11,13 @@ const FONTS = {
   serif: ['Serif', "Georgia,'Times New Roman',serif"], mono: ['Monospace', "ui-monospace,Consolas,Menlo,monospace"],
   display: ['Bold display', "Impact,'Arial Black',sans-serif"], fun: ['Playful', "'Comic Sans MS','Chalkboard SE',cursive"]
 };
-const RADIUS = { rounded: '18%', square: '6%', circle: '50%' };
-const DEFAULTS = { theme: 'cotton', font: 'cute', fontScale: 100, tileShape: 'rounded', tileScale: 100, title: 'UNSCRAMBLE',
+const RADIUS = { rounded: '32%', square: '8%', circle: '50%' };
+const TFONTS = {   // game-name fonts (Google Fonts, with safe fallbacks)
+  lilita: ['Lilita One (bold cute)', "'Lilita One','Baloo 2',Impact,sans-serif"], titan: ['Titan One (chunky)', "'Titan One','Lilita One',Impact,sans-serif"],
+  bungee: ['Bungee (arcade)', "'Bungee','Lilita One',Impact,sans-serif"], luckiest: ['Luckiest Guy (comic)', "'Luckiest Guy','Lilita One',Impact,sans-serif"],
+  baloo: ['Baloo 2 (round)', "'Baloo 2','Fredoka',sans-serif"], same: ['Same as text font', 'inherit']
+};
+const DEFAULTS = { theme: 'cotton', font: 'cute', titleFont: 'lilita', fontScale: 100, tileShape: 'rounded', tileScale: 100, title: 'UNSCRAMBLE',
   footer: 'Type the correct word(s) in the chat to win!', reduceMotion: false, showTitle: true, showCategory: true, showTimer: true,
   showHint: true, showPopup: true, showLb: true, showFeed: true, showFooter: true, feedSecs: 3, lbRows: 5,
   z1: 9, zg: 9, z2: 40, z4: 13, sound: false, volume: 60, playerName: 'Me' };
@@ -38,6 +43,7 @@ const FIELDS = {
   look: [
     { k: 'theme', l: 'Theme', t: 'select', o: Object.entries(THEMES).map(([k, x]) => [k, x.icon + ' ' + x.name]) },
     { k: 'font', l: 'Font', t: 'select', o: Object.entries(FONTS).map(([k, x]) => [k, x[0]]) },
+    { k: 'titleFont', l: 'Game name font', t: 'select', o: Object.entries(TFONTS).map(([k, x]) => [k, x[0]]) },
     rg('fontScale', 'Text size', 80, 120, 5, '%'),
     { k: 'tileShape', l: 'Tile shape', t: 'select', o: [['rounded', 'Rounded'], ['square', 'Square'], ['circle', 'Circle']] },
     rg('tileScale', 'Max tile size', 60, 100, 5, '%'),
@@ -280,7 +286,7 @@ export default function App() {
   // Mini leaderboard: row height is calculated from the room the zone really has, so rows shrink to fit and can never spill into the footer.
   const availLb = z3 * CQ - 2, nRows = Math.max(1, Math.min(L.lbRows, Math.floor(availLb / 5.5)));
   const lh = Math.min(9, availLb / nRows) - 1;
-  const style = { ...theme.v, '--fs': L.fontScale / 100, '--ff': FONTS[L.font][1], '--tr': RADIUS[L.tileShape], '--lh': lh, gridTemplateRows: `auto minmax(0,${z1}fr) minmax(0,${zg}fr) minmax(0,${z2}fr) minmax(0,${z3}fr) minmax(0,${z4}fr)` };
+  const style = { ...theme.v, '--fs': L.fontScale / 100, '--ff': FONTS[L.font][1], '--tf': (TFONTS[L.titleFont] || TFONTS.lilita)[1] === 'inherit' ? FONTS[L.font][1] : (TFONTS[L.titleFont] || TFONTS.lilita)[1], '--tr': RADIUS[L.tileShape], '--lh': lh, gridTemplateRows: `auto minmax(0,${z1}fr) minmax(0,${zg}fr) minmax(0,${z2}fr) minmax(0,${z3}fr) minmax(0,${z4}fr)` };
   const hid = on => (on ? '' : ' hid');
   const rows = s.leaderboard.slice(0, nRows);   // only real winners - no empty placeholder rows
   const won = reveal && s.winnerInfo;
@@ -307,7 +313,7 @@ export default function App() {
 
       {/* ALWAYS-VISIBLE HOST TOOLBAR */}
       <nav className="bar">
-        <FitText className={'brand' + hid(L.showTitle)} dep={L.title + L.fontScale + L.font}>{L.title}</FitText>
+        <FitText className={'brand' + hid(L.showTitle)} dep={L.title + L.fontScale + L.font + L.titleFont}>{L.title}</FitText>
         <button className={'mode m-' + pm} onClick={() => { setMmenu(m => !m); setMenu(false); }} title="Mode: Test / Live / Offline">{MODES[pm][0]}<small>{MODES[pm][1]}</small></button>
         <button onClick={() => { setMenu(m => !m); setMmenu(false); }} title="Theme">{theme.icon}</button>
         <button className={s.paused ? 'hot' : ''} onClick={() => admin('pause')} title={s.paused ? 'Resume' : 'Pause'}>{s.paused ? '▶️' : '⏸️'}</button>

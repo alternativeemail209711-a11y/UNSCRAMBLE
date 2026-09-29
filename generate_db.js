@@ -36,7 +36,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 async function api(params) {
   const u = new URL(API);
   Object.entries({ format: 'json', origin: '*', ...params }).forEach(([k, v]) => u.searchParams.set(k, v));
-  const r = await fetch(u, { headers: { 'User-Agent': 'UnscrambleLiveDB/1.0' } });
+  const r = await fetch(u, { headers: { 'User-Agent': 'WordShuffleDB/1.0' } });
   if (!r.ok) throw new Error('HTTP ' + r.status);
   await sleep(100);
   return r.json();

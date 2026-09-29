@@ -12,19 +12,35 @@ const FONTS = {
   display: ['Bold display', "Impact,'Arial Black',sans-serif"], fun: ['Playful', "'Comic Sans MS','Chalkboard SE',cursive"]
 };
 const RADIUS = { rounded: '32%', square: '8%', circle: '50%' };
+const XF = {   // extra Google Fonts (game name + letter boxes)
+  poppins: ['Poppins (clean bold)', "'Poppins','Fredoka',sans-serif"], rubik: ['Rubik (soft)', "'Rubik','Fredoka',sans-serif"], nunito: ['Nunito (round)', "'Nunito','Fredoka',sans-serif"],
+  montserrat: ['Montserrat (modern)', "'Montserrat','Poppins',sans-serif"], bangers: ['Bangers (comic)', "'Bangers','Lilita One',Impact,sans-serif"], chewy: ['Chewy (cartoon)', "'Chewy','Lilita One',sans-serif"],
+  marker: ['Permanent Marker (hand-drawn)', "'Permanent Marker','Comic Sans MS',cursive"], pacifico: ['Pacifico (script)', "'Pacifico',cursive"], pixel: ['Press Start 2P (pixel)', "'Press Start 2P',monospace"],
+  orbitron: ['Orbitron (sci-fi)', "'Orbitron',sans-serif"], righteous: ['Righteous (retro)', "'Righteous','Lilita One',sans-serif"], cinzel: ['Cinzel (classic capitals)', "'Cinzel',Georgia,serif"], robomono: ['Roboto Mono (typewriter)', "'Roboto Mono',ui-monospace,monospace"]
+};
 const TFONTS = {   // game-name fonts (Google Fonts, with safe fallbacks)
   lilita: ['Lilita One (bold cute)', "'Lilita One','Baloo 2',Impact,sans-serif"], titan: ['Titan One (chunky)', "'Titan One','Lilita One',Impact,sans-serif"],
   bungee: ['Bungee (arcade)', "'Bungee','Lilita One',Impact,sans-serif"], luckiest: ['Luckiest Guy (comic)', "'Luckiest Guy','Lilita One',Impact,sans-serif"],
-  baloo: ['Baloo 2 (round)', "'Baloo 2','Fredoka',sans-serif"], same: ['Same as text font', 'inherit']
+  baloo: ['Baloo 2 (round)', "'Baloo 2','Fredoka',sans-serif"], ...XF, same: ['Same as text font', 'inherit']
 };
+const TILEF = { same: ['Same as text font', 'inherit'], ...FONTS, ...Object.fromEntries(Object.entries(TFONTS).filter(([k]) => k !== 'same')) };   // letter-box fonts
 // Buttons that can appear on the top toolbar (settings ⚙️ is always there so you can never lock yourself out)
 const TB = [['mode', '🧪', 'Mode (Test / Live / Solo)'], ['theme', '🎨', 'Theme'], ['pause', '⏸️', 'Pause / Resume'], ['skip', '⏭️', 'Skip round'], ['hint', '💡', 'Hint now'],
   ['time', '⏰', 'Add 15 seconds'], ['cats', '🗂️', 'Categories'], ['answer', '👁️', 'Show / hide correct answer'], ['sound', '🔔', 'Sound on / off'], ['full', '⛶', 'Full screen'], ['lb', '🏆', 'Show / hide leaderboard now'], ['resetlb', '🧹', 'Reset leaderboard']];
 const TB_DEFAULT = ['mode', 'theme', 'pause', 'skip', 'hint', 'lb', 'full'];
-const DEFAULTS = { theme: 'cotton', font: 'cute', titleFont: 'lilita', toolbar: TB_DEFAULT, fontScale: 100, tileShape: 'rounded', tileScale: 100, title: 'UNSCRAMBLE',
+// Floating windows: every window has its own settings (g = guess window, w = winner window, l = full leaderboard window).
+// X / Y = how far it is moved from its normal place (% of the screen), Sc = size %, W = width %, Op = whole-window opacity, Bg / BgOp = background colour + opacity.
+const WDEF = {
+  gRows: 1, gW: 100, gSc: 100, gX: 0, gY: 0, gOp: 100, gBg: '', gBgOp: 100, gAv: true, gNm: true, gTx: true,
+  wRows: 4, wW: 100, wSc: 100, wX: 0, wY: 0, wOp: 100, wBg: '', wBgOp: 100, wAv: true, wNm: true, wWd: true, wPt: true, wHead: '',
+  lTop: 0, lVis: 0, lW: 100, lSc: 100, lX: 0, lY: 0, lOp: 100, lBg: '', lBgOp: 100, lRk: true, lAv: true, lNm: true, lPt: true, lHead: true, lTitle: '🏆 Leaderboard', lDim: true
+};
+// Puzzle letter boxes (t = tile)
+const TDEF = { tFont: 'same', tWt: '700', tFs: 64, tTxt: '', tBg1: '', tBg2: '', tEdge: '', tOk1: '', tOk2: '', tOp: 100, tBw: 7, tGap: 8, tGloss: true, tShadow: true, tBob: true };
+const DEFAULTS = { theme: 'cotton', font: 'cute', titleFont: 'lilita', toolbar: TB_DEFAULT, fontScale: 100, tileShape: 'rounded', tileScale: 100, title: 'WORD SHUFFLE', cTitle: '',
   footer: 'Type the correct word(s) in the chat to win!', reduceMotion: false, showTitle: true, showCategory: true, showTimer: true,
   showHint: true, showPopup: true, showLb: true, showFeed: true, showFooter: true, feedSecs: 3, lbRows: 5,
-  z1: 9, zg: 8, z2: 34, z4: 14, sound: false, volume: 60, playerName: 'Me', cBg1: '', cBg2: '', cA1: '', cA2: '', cTxt: '', liveAsk: true, showNext: true, showChat: true, chatW: 48 };
+  z1: 9, zg: 8, z2: 34, z4: 14, sound: false, volume: 60, playerName: 'Me', cBg1: '', cBg2: '', cA1: '', cA2: '', cTxt: '', liveAsk: true, showNext: true, showChat: true, chatW: 48, ...WDEF, ...TDEF };
 const MODES = {
   test: ['🧪', 'TEST', 'Test mode', 'Try games & upgrades. TikTok chat is OFF. Use the guess box, ✅ (solve), 💬 (fake chat) and 🤖 (auto-guessing bot).'],
   live: ['🔴', 'LIVE', 'Live mode', 'Go live on TikTok. Reads the TikTok chat. Guess box is hidden.'],
@@ -37,9 +53,15 @@ const cleanOld = o => { const c = { ...o }; OLD_KEYS.forEach(k => delete c[k]); 
 const readSaved = key => {
   let o = {}; try { o = JSON.parse(localStorage.getItem(key) || '{}'); } catch { o = {}; }
   try { if (localStorage.getItem('ul-layout-v') !== LAYOUT_V) o = cleanOld(o); } catch { /* ignore */ }
+  try { if (localStorage.getItem('ul-title-v') !== '1' && (o.title === 'UNSCRAMBLE' || o.title === 'UNSCRAMBLE LIVE')) { o = { ...o }; delete o.title; } } catch { /* ignore */ }
   return o;
 };
-const markMigrated = () => { try { if (localStorage.getItem('ul-layout-v') !== LAYOUT_V) { localStorage.setItem('ul-defaults', JSON.stringify(readSaved('ul-defaults'))); localStorage.setItem('ul-settings', JSON.stringify(readSaved('ul-settings'))); localStorage.setItem('ul-layout-v', LAYOUT_V); } } catch { /* ignore */ } };
+const markMigrated = () => {
+  try {
+    if (localStorage.getItem('ul-layout-v') !== LAYOUT_V) { localStorage.setItem('ul-defaults', JSON.stringify(readSaved('ul-defaults'))); localStorage.setItem('ul-settings', JSON.stringify(readSaved('ul-settings'))); localStorage.setItem('ul-layout-v', LAYOUT_V); }
+    if (localStorage.getItem('ul-title-v') !== '1') { localStorage.setItem('ul-defaults', JSON.stringify(readSaved('ul-defaults'))); localStorage.setItem('ul-settings', JSON.stringify(readSaved('ul-settings'))); localStorage.setItem('ul-title-v', '1'); }
+  } catch { /* ignore */ }
+};
 const loadDefaults = () => ({ ...DEFAULTS, ...readSaved('ul-defaults') });
 const tg = (k, l) => ({ k, l, t: 'toggle' });
 const rg = (k, l, min, max, step = 1, u = '') => ({ k, l, t: 'range', min, max, step, u });
@@ -54,7 +76,7 @@ const FIELDS = {
     { k: 'title', l: 'Title text', t: 'text' }, { k: 'footer', l: 'Footer text', t: 'text' },
     { k: 'playerName', l: 'My name (Test / Offline guesses)', t: 'text' },
     tg('reduceMotion', 'Reduce animations'),
-    { k: 'cBg1', l: 'Background colour 1 (Reset = theme)', t: 'color' }, { k: 'cBg2', l: 'Background colour 2', t: 'color' }, { k: 'cA1', l: 'Accent colour 1 (banners, buttons)', t: 'color' }, { k: 'cA2', l: 'Accent colour 2', t: 'color' }, { k: 'cTxt', l: 'Text colour', t: 'color' },
+    { k: 'cBg1', l: 'Background colour 1 (Reset = theme)', t: 'color' }, { k: 'cBg2', l: 'Background colour 2', t: 'color' }, { k: 'cA1', l: 'Accent colour 1 (banners, buttons)', t: 'color' }, { k: 'cA2', l: 'Accent colour 2', t: 'color' }, { k: 'cTxt', l: 'Text colour', t: 'color' }, { k: 'cTitle', l: 'Game name colour (Reset = theme text colour)', t: 'color' },
     tg('showNext', 'Show "next round in N seconds" countdown after each round'), tg('showChat', 'Show live chat beside the leaderboard'), rg('chatW', 'Live chat width', 30, 65, 1, '%'),
     tg('liveAsk', 'Show the TikTok login window when switching to Live')],
   layout: [
@@ -73,6 +95,51 @@ const FIELDS = {
     rg('hintEvery', 'Next hint every', 3, 60, 1, 's'), rg('maxHints', 'Max hints', 0, 10), rg('wordPercent', 'Word Power (dictionary) share of rounds in Random mix', 0, 100, 5, '%'),
     tg('botOn', '🤖 Test bot guesses by itself (Test mode only)'), rg('botEvery', 'Bot guesses every', 1, 30, 1, 's'), rg('botSkill', 'Chance the bot solves a round', 0, 100, 5, '%')]
 };
+
+// ---- FLOATING WINDOWS tab: each window has its own group of settings (src 'cfg' = saved on the server, otherwise this device)
+const posF = (p, wmin, wmax) => [
+  rg(p + 'X', 'Move left ⟷ right', -50, 50, 1, '%'), rg(p + 'Y', 'Move up ↕ down', -50, 50, 1, '%'), rg(p + 'Sc', 'Size (whole window)', 40, 160, 5, '%'), rg(p + 'W', 'Width', wmin, wmax, 5, '%'),
+  rg(p + 'Op', 'Window opacity (everything in it)', 10, 100, 5, '%'), { k: p + 'Bg', l: 'Background colour (Reset = theme)', t: 'color' }, rg(p + 'BgOp', 'Background opacity', 0, 100, 5, '%')];
+const WINF = {
+  g: { title: '💬 Guess window (under the category)', fields: [
+    tg('showFeed', 'Show this window'), rg('feedSecs', 'Each guess stays for', 1, 10, 1, 's'), rg('gRows', 'Rows: guesses shown at once', 1, 5),
+    tg('gAv', 'Show profile picture'), tg('gNm', 'Show @username'), tg('gTx', 'Show the guess text'), ...posF('g', 30, 100)] },
+  w: { title: '🏆 Winner window (centre)', fields: [
+    tg('showPopup', 'Show this window'), { ...rg('popupSecs', 'Stays for', 2, 30, 1, 's'), src: 'cfg' }, rg('wRows', 'Rows (1 = everything on one row … 4 = each item on its own row)', 1, 4),
+    tg('wAv', 'Show profile picture'), tg('wNm', 'Show @username'), tg('wWd', 'Show the correct word'), tg('wPt', 'Show the points (+1)'), { k: 'wHead', l: 'Heading text (optional, e.g. 🎉 WINNER!)', t: 'text' }, ...posF('w', 40, 115)] },
+  l: { title: '📊 Full leaderboard window', fields: [
+    { ...tg('showLbOverlay', 'Show this window after the winner window'), src: 'cfg' }, { ...rg('lbSecs', 'Stays for', 3, 60, 1, 's'), src: 'cfg' },
+    rg('lTop', 'Players listed (0 = everyone)', 0, 50), rg('lVis', 'Rows visible at once (0 = auto, extra players scroll)', 0, 15),
+    tg('lRk', 'Show rank / medal'), tg('lAv', 'Show profile picture'), tg('lNm', 'Show @username'), tg('lPt', 'Show points'), tg('lHead', 'Show heading'), { k: 'lTitle', l: 'Heading text', t: 'text' }, tg('lDim', 'Dim the game behind it'), ...posF('l', 50, 105)] }
+};
+const clrF = (k, l) => ({ k, l, t: 'color' });
+const TILE_F = [
+  { k: 'tileShape', l: 'Box shape', t: 'select', o: [['rounded', 'Rounded'], ['square', 'Square'], ['circle', 'Circle']] }, rg('tileScale', 'Max box size', 60, 100, 5, '%'),
+  { k: 'tFont', l: 'Letter font', t: 'select', o: Object.entries(TILEF).map(([k, x]) => [k, x[0]]) },
+  { k: 'tWt', l: 'Letter weight', t: 'select', o: [['400', 'Regular'], ['500', 'Medium'], ['700', 'Bold'], ['900', 'Black']] }, rg('tFs', 'Letter size inside the box', 40, 90, 1, '%'),
+  clrF('tTxt', 'Letter colour (Reset = theme)'), clrF('tBg1', 'Box colour - top (Reset = theme)'), clrF('tBg2', 'Box colour - bottom (same as top = solid)'), clrF('tEdge', 'Border colour'),
+  rg('tOp', 'Box opacity (letters stay solid)', 0, 100, 5, '%'), rg('tBw', 'Border thickness', 0, 15, 1, '%'), rg('tGap', 'Space between boxes', 0, 40, 1, '%'),
+  clrF('tOk1', 'Solved colour - top (when the word is revealed)'), clrF('tOk2', 'Solved colour - bottom'),
+  tg('tGloss', 'Glossy highlight'), tg('tShadow', 'Drop shadow'), tg('tBob', 'Bouncing / wobble animation')];
+
+// CSS variables for the letter boxes and for the floating windows
+const mixc = (c, p) => (p >= 100 ? c : `color-mix(in srgb, ${c} ${p}%, transparent)`);
+const tileVars = l => {
+  const o = l.tOp ?? 100, v = {
+    '--tb1': mixc(l.tBg1 || 'var(--t1)', o), '--tb2': mixc(l.tBg2 || 'var(--t2)', o), '--tbe': mixc(l.tEdge || 'var(--te)', o), '--tok1': mixc(l.tOk1 || '#b6ffd2', o), '--tok2': mixc(l.tOk2 || '#3fdc8c', o),
+    '--tbw': (l.tBw ?? 7) / 100, '--tfs': (l.tFs ?? 64) / 100, '--tfw': l.tWt || '700', '--tgap': (l.tGap ?? 8) / 100, '--hl': l.tGloss === false ? 'none' : 'block' };
+  if (l.tTxt) v['--ttx'] = l.tTxt;
+  const ff = (TILEF[l.tFont] || [])[1]; if (ff && ff !== 'inherit') v['--tff'] = ff;
+  if (l.tGloss === false) v['--tgl'] = 'linear-gradient(#0000,#0000)';
+  return v;
+};
+const themeVars = l => ({ ...(THEMES[l.theme] || THEMES.cotton).v, ...(l.cBg1 && { '--bg1': l.cBg1 }), ...(l.cBg2 && { '--bg2': l.cBg2 }), ...(l.cA1 && { '--a1': l.cA1 }), ...(l.cA2 && { '--a2': l.cA2 }), ...(l.cTxt && { '--text': l.cTxt }) });
+const winPos = (l, p) => { const x = l[p + 'X'], y = l[p + 'Y'], sc = l[p + 'Sc'], op = l[p + 'Op']; return { transform: x || y || sc !== 100 ? `translate(${x}cqw, ${y}cqh) scale(${sc / 100})` : 'none', opacity: op / 100 }; };
+const winBg = (l, p, d) => { const c = l[p + 'Bg'] || d, o = l[p + 'BgOp']; return o >= 100 ? c : `color-mix(in srgb, ${c} ${o}%, transparent)`; };
+const SAMPLE_G = ['sample_fan|is it a planet?|0', 'word_wizard|PLANET|1', 'quick_fox|maybe a star|0', 'lucky_lily|comet?|0', 'top_guesser|moon|0'].map((x, i) => { const [user, text, ok] = x.split('|'); return { id: 'sg' + i, user, text, ok: ok === '1', pic: '' }; });
+const SAMPLE_W = { user: 'word_wizard', pic: '', word: 'PLANET', pts: 1 };
+const SAMPLE_L = Array.from({ length: 14 }, (_, i) => ({ user: 'player_' + (i + 1), pic: '', score: 15 - i }));
+const winKeys = p => Object.keys(WDEF).filter(k => k[0] === p);
 
 // ---- TOOLBAR REGISTRY: every toggle / slider / dropdown / text setting can be pinned to the top toolbar as a button.
 const ICONS = { font: '🔤', fontScale: '🔠', tileShape: '🔷', tileScale: '🔳', title: '✏️', footer: '📝', playerName: '👤', reduceMotion: '🐢', showTitle: '🏷️', showCategory: '📂',
@@ -99,9 +166,9 @@ function beep(vol, notes) {
 // STRICT ONE-ROW RULE: every letter of every word sits in ONE single row. The tile size is calculated from the row width
 // (letters + small gaps inside words + bigger gaps between words), so the row always fits - long answers simply get smaller tiles.
 const LETTER_GAP = 0.08, WORD_GAP = 0.5;
-function rowTile(lens, W, H) {
+function rowTile(lens, W, H, gap = LETTER_GAP) {
   const L = lens.reduce((a, b) => a + b, 0), n = lens.length;
-  const units = L + LETTER_GAP * (L - n) + WORD_GAP * (n - 1);
+  const units = L + gap * (L - n) + WORD_GAP * (n - 1);
   return Math.max(4, Math.floor(Math.min((W * 0.96) / units, H * 0.78, 90)));
 }
 
@@ -116,21 +183,22 @@ function Avatar({ pic, name, size }) {
     : <img className="av" style={st} src={stage === 0 ? proxied(pic) : pic} alt="" referrerPolicy="no-referrer" onError={() => setStage(x => x + 1)} />;
 }
 
-// Full leaderboard (everyone with points). Rows shrink to fit; with a very long list it scrolls slowly during the display time.
-function FullBoard({ rows, secs, winner }) {
-  const AV = 100, n = rows.length;
-  const pitch = n * 10 <= AV ? 10 : Math.max(6.4, AV / n), rh = pitch - 1, total = n * pitch, over = Math.max(0, total - AV);
+// Full leaderboard (everyone with points). Rows shrink to fit; with a long list (or a fixed number of visible rows) it scrolls slowly during the display time.
+// `l` = this window's own settings (players listed, rows visible, what is shown, size/width/colour).
+function FullBoard({ rows: all, secs, winner, l }) {
+  const rows = l.lTop > 0 ? all.slice(0, l.lTop) : all, n = rows.length, fixed = l.lVis > 0, AV = fixed ? l.lVis * 10 : 100;
+  const pitch = fixed ? 10 : n * 10 <= AV ? 10 : Math.max(6.4, AV / n), rh = pitch - 1, total = n * pitch, over = Math.max(0, total - AV);
   return (
-    <div className="fb">
-      <h2>🏆 Leaderboard</h2>
+    <div className="fb" style={{ width: 92 * l.lW / 100 + 'cqw', background: winBg(l, 'l', 'var(--bg1)') }}>
+      {l.lHead && <h2>{l.lTitle}</h2>}
       <div className="fbwin" style={{ height: Math.min(total, AV) + 'cqw' }}>
         <div className={'fblist' + (over > 0 ? ' scroll' : '')} style={{ '--rh': rh, '--d': over + 'cqw', '--secs': Math.max(2, secs - 1) + 's' }}>
           {rows.map((p, i) => (
             <div className={'fbrow' + (p.user === winner ? ' new' : '')} key={p.user}>
-              <span className="rk">{i < 3 ? MEDALS[i] : i + 1}</span>
-              <Avatar pic={p.pic} name={p.user} size="calc(var(--rh)*1cqw)" />
-              <div className="who"><b>@{p.user}</b></div>
-              <span className="pts">{p.score}</span>
+              {l.lRk && <span className="rk">{i < 3 ? MEDALS[i] : i + 1}</span>}
+              {l.lAv && <Avatar pic={p.pic} name={p.user} size="calc(var(--rh)*1cqw)" />}
+              <div className="who">{l.lNm && <b>@{p.user}</b>}</div>
+              {l.lPt && <span className="pts">{p.score}</span>}
             </div>
           ))}
         </div>
@@ -139,7 +207,24 @@ function FullBoard({ rows, secs, winner }) {
   );
 }
 
-function Board({ text, solved, scale }) {
+// Winner window: picture / name / word / points arranged in the number of rows chosen for this window.
+function WinnerCard({ w, l }) {
+  const items = [l.wAv && 'av', l.wNm && 'nm', l.wWd && 'wd', l.wPt && 'pt'].filter(Boolean), k = items.length;
+  const R = k ? Math.max(1, Math.min(l.wRows || 4, k)) : 0, base = R ? Math.floor(k / R) : 0, extra = R ? k % R : 0, groups = []; let at = 0;
+  for (let i = 0; i < R; i++) { const c = base + (i < extra ? 1 : 0); groups.push(items.slice(at, at + c)); at += c; }
+  const part = (id, shared) => (id === 'av' ? <Avatar key={id} pic={w.pic} name={w.user} size={shared ? '15cqw' : '30cqw'} />
+    : id === 'nm' ? <b key={id} className="pn">@{w.user}</b>
+      : id === 'wd' ? <FitText key={id} className="wd" dep={w.word}>{w.word || '🎉 Correct!'}</FitText>
+        : <div key={id} className="pt">+{w.pts}</div>);
+  return (
+    <div className="pop" style={{ width: 82 * l.wW / 100 + 'cqw', background: winBg(l, 'w', 'var(--bg1)') }}>
+      {l.wHead && <FitText className="whd" dep={l.wHead}>{l.wHead}</FitText>}
+      {groups.map((g, i) => <div className="prow" key={i}>{g.map(id => part(id, g.length > 1))}</div>)}
+    </div>
+  );
+}
+
+function Board({ text, solved, scale, gap }) {
   const ref = useRef(null);
   const [box, setBox] = useState({ w: 320, h: 200 });
   useLayoutEffect(() => {
@@ -150,7 +235,7 @@ function Board({ text, solved, scale }) {
     return () => ro.disconnect();
   }, []);
   const words = text.split(' ').filter(Boolean);
-  const t = Math.max(4, Math.floor(rowTile(words.map(w => w.length), box.w, box.h) * scale / 100));   // scale is <= 100, so it can only shrink
+  const t = Math.max(4, Math.floor(rowTile(words.map(w => w.length), box.w, box.h, gap) * scale / 100));   // scale is <= 100, so it can only shrink
   return (
     <div className="board" ref={ref} style={{ '--t': t + 'px' }}>
       <div className="words" key={text}>
@@ -181,22 +266,25 @@ function FitText({ as: Tag = 'div', className, children, dep }) {
   return <Tag ref={ref} className={className}>{children}</Tag>;
 }
 
-// GAME NAME BADGE: always fits inside its own reserved box on the toolbar, whatever the font or theme.
-// It re-measures after fonts finish loading, when the theme/font/size changes, and when the screen is resized.
-function BrandTitle({ text, dep, on }) {
-  const box = useRef(null), txt = useRef(null);
+// GAME NAME: two lines - the first word small (exactly 50% of the second word's size) above the big second word. No border, no badge.
+// It always stays inside its own reserved area on the toolbar: the size is worked out from the area's width AND height, and re-measured
+// after fonts finish loading, when the theme/font/size changes, and when the screen is resized.
+function BrandTitle({ text, dep, on, fs }) {
+  const box = useRef(null), blk = useRef(null);
+  const words = (text || '').trim().split(/\s+/).filter(Boolean), top = words.length > 1 ? words[0] : '', bottom = words.length > 1 ? words.slice(1).join(' ') : words[0] || '';
   useLayoutEffect(() => {
-    const b = box.current, t = txt.current; if (!b || !t) return;
+    const b = box.current, t = blk.current; if (!b || !t) return undefined;
     let dead = false;
     const fit = () => {
       if (dead) return;
-      t.style.fontSize = '';
-      let px = parseFloat(getComputedStyle(t).fontSize);
-      const cs = getComputedStyle(b), room = b.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
-      for (let i = 0; i < 6 && room > 0; i++) {   // a few passes, because letter-spacing does not scale with the font size
-        const w = t.getBoundingClientRect().width;
-        if (w <= room - 0.5) break;
-        px = Math.max(5, px * (room / w) * 0.96); t.style.fontSize = px + 'px';
+      const cs = getComputedStyle(b), rw = b.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight), rhh = b.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+      if (rw <= 0 || rhh <= 0) return;
+      let px = (rhh / (top ? 1.65 : 1.1)) * Math.min(1, fs || 1);   // small word = 50% of the big one, so the pair is 1.5 lines tall
+      t.style.setProperty('--bf', px + 'px');
+      for (let i = 0; i < 8; i++) {   // a few passes: shrink until BOTH the width and the height fit
+        const r = t.getBoundingClientRect(), k = Math.min(rw / r.width, rhh / r.height);
+        if (!(k < 0.995)) break;
+        px = Math.max(4, px * k * 0.98); t.style.setProperty('--bf', px + 'px');
       }
     };
     fit();
@@ -205,8 +293,8 @@ function BrandTitle({ text, dep, on }) {
     document.fonts?.addEventListener?.('loadingdone', fit);
     const t1 = setTimeout(fit, 600), t2 = setTimeout(fit, 2500);   // safety re-checks for slow phones
     return () => { dead = true; ro.disconnect(); clearTimeout(t1); clearTimeout(t2); document.fonts?.removeEventListener?.('loadingdone', fit); };
-  }, [dep, text]);   // eslint-disable-line
-  return <div ref={box} className={'brand' + (on ? '' : ' hid')}><span ref={txt}>{text}</span></div>;
+  }, [dep, text, top, fs]);   // eslint-disable-line
+  return <div ref={box} className={'brand' + (on ? '' : ' hid')}><div ref={blk} className="bi">{top && <span className="l1">{top}</span>}<span className="l2">{bottom}</span></div></div>;
 }
 const CatBanner = ({ text, on, dep }) => <FitText className={'cat' + (on ? '' : ' hid')} dep={text + '|' + dep}>✨ CATEGORY: {text}</FitText>;
 
@@ -220,16 +308,19 @@ function Field({ f, v, set }) {
 }
 
 export default function App() {
-  const [L, setL] = useState(() => { const v = { ...loadDefaults(), ...readSaved('ul-settings') }; markMigrated(); return v; });
+  const [Lr, setL] = useState(() => { const v = { ...loadDefaults(), ...readSaved('ul-settings') }; markMigrated(); return v; });
   const [draft, setDraft] = useState(null), [toast, setToast] = useState(''), [hasDef, setHasDef] = useState(false);   // draft = what the settings panel edits until Save & Apply
+  const [prev, setPrev] = useState(null);   // 'g' | 'w' | 'l' = previewing a floating window with the unsaved draft settings
+  const L = prev && draft ? draft.L : Lr;   // while previewing, the whole screen is drawn with the draft settings
   const setLocal = (k, v) => { setL(o => ({ ...o, [k]: v })); setDraft(d => (d ? { ...d, L: { ...d.L, [k]: v } } : d)); };   // toolbar quick actions (theme, sound)
   const setDL = (k, v) => setDraft(d => ({ ...d, L: { ...d.L, [k]: v } }));
   const setDC = (k, v) => setDraft(d => ({ ...d, cfg: { ...d.cfg, [k]: v } }));
-  useEffect(() => { try { localStorage.setItem('ul-settings', JSON.stringify(L)); } catch { /* ignore */ } }, [L]);
+  useEffect(() => { try { localStorage.setItem('ul-settings', JSON.stringify(Lr)); } catch { /* ignore */ } }, [Lr]);
+  useEffect(() => { if (!prev) return undefined; const t = setTimeout(() => setPrev(null), 12000); return () => clearTimeout(t); }, [prev]);
 
   const [s, setS] = useState(null), [cfg, setCfg] = useState(null), [cats, setCats] = useState([]), [pinReq, setPinReq] = useState(false);
-  const [gw, setGw] = useState(null), [left, setLeft] = useState(0);   // gw = the ONE guess card currently floating (or null)
-  const gwT = useRef({ shownAt: 0, hide: 0, swap: 0, secs: 3 });
+  const [gws, setGws] = useState([]), [left, setLeft] = useState(0);   // gws = the guess card(s) currently floating in the guess window
+  const gwT = useRef({ shownAt: 0, swap: 0, secs: 3, rows: 1, tm: {} });
   const [menu, setMenu] = useState(false), [mmenu, setMmenu] = useState(false), [panel, setPanel] = useState(null), [pop, setPop] = useState(null);
   const [pm, setPm] = useState('test'), [tt, setTt] = useState({ status: 'off', user: '' }), [fb, setFb] = useState('');
   const [ttUser, setTtUser] = useState(''), [ttKey, setTtKey] = useState(''), [ttMsg, setTtMsg] = useState('');
@@ -242,11 +333,13 @@ export default function App() {
     socket.on('state', st => { setS(st); deadline.current = Date.now() + st.remaining * 1000; setLeft(st.remaining); });
     socket.on('settings', x => { setCfg(x.cfg); setCats(x.cats); setPinReq(x.pinRequired); setCustom(x.custom || {}); setHasDef(!!x.hasDefaults); setPm(x.playMode || 'test'); setTt(x.tt || { status: 'off', user: '' }); });
     const g = gwT.current, MIN_MS = 1200;   // a guess card is shown at least 1.2s before the next one may replace it
-    const show = m => {
-      g.shownAt = Date.now(); setGw(m);
-      clearTimeout(g.hide); g.hide = setTimeout(() => setGw(null), g.secs * 1000);
+    const clearGw = () => { Object.values(g.tm).forEach(clearTimeout); g.tm = {}; setGws([]); };
+    const show = batch => {   // each guess card has its own timer; the window keeps the newest `rows` cards
+      g.shownAt = Date.now();
+      setGws(list => [...list.filter(x => !batch.some(b => b.id === x.id)), ...batch].slice(-g.rows));
+      batch.forEach(b => { clearTimeout(g.tm[b.id]); g.tm[b.id] = setTimeout(() => { setGws(list => list.filter(x => x.id !== b.id)); delete g.tm[b.id]; }, g.secs * 1000); });
     };
-    socket.on('feedClear', () => { setChat([]); mlbOn.current = false; setMlb(null); clearTimeout(g.hide); clearTimeout(g.swap); setGw(null); });
+    socket.on('feedClear', () => { setChat([]); mlbOn.current = false; setMlb(null); clearTimeout(g.swap); clearGw(); });
     socket.on('mlb', m => {   // host pressed the trophy button: show / hide the full leaderboard
       clearTimeout(g.mt);
       if (mlbOn.current || !m.rows.length) { mlbOn.current = false; setMlb(null); if (!m.rows.length) { setToast('🏆 No points yet'); setTimeout(() => setToast(''), 2000); } return; }
@@ -254,30 +347,37 @@ export default function App() {
     });
     socket.on('feed', items => {
       setChat(c => { const ids = new Set(c.map(x => x.id)); return [...c, ...items.filter(x => !ids.has(x.id))].slice(-30); });
-      const m = items[items.length - 1]; if (!m) return;   // busy chat: only the newest guess is shown, never a pile
+      const batch = items.slice(-g.rows); if (!batch.length) return;   // busy chat: only the newest guess(es) are shown, never a pile
       const wait = MIN_MS - (Date.now() - g.shownAt);
       clearTimeout(g.swap);
-      if (wait <= 0) show(m); else g.swap = setTimeout(() => show(m), wait);
+      if (wait <= 0) show(batch); else g.swap = setTimeout(() => show(batch), wait);
     });
     const iv = setInterval(() => { if (!paused.current) setLeft(Math.max(0, Math.ceil((deadline.current - Date.now()) / 1000))); }, 250);
-    return () => { clearInterval(iv); clearTimeout(g.hide); clearTimeout(g.swap); socket.off('state'); socket.off('settings'); socket.off('feed'); socket.off('feedClear'); socket.off('mlb'); clearTimeout(g.mt); };
+    return () => { clearInterval(iv); Object.values(g.tm).forEach(clearTimeout); clearTimeout(g.swap); socket.off('state'); socket.off('settings'); socket.off('feed'); socket.off('feedClear'); socket.off('mlb'); clearTimeout(g.mt); };
   }, []);
   const paused = useRef(false);
   paused.current = !!s?.paused;
-  gwT.current.secs = L.feedSecs || 3;
+  gwT.current.secs = Lr.feedSecs || 3;
+  gwT.current.rows = Math.max(1, Lr.gRows || 1);
   useEffect(() => { setTtUser(tt.user || ''); }, [tt.user]);
 
   useEffect(() => { if (s?.phase === 'reveal' && s.winnerInfo && L.sound) beep(L.volume, [523, 659, 784, 1047]); }, [s?.phase, s?.round]); // eslint-disable-line
 
   const theme = THEMES[L.theme] || THEMES.cotton;
-  useEffect(() => { document.body.style.background = theme.v['--bg1']; }, [theme]);
+  // The WHOLE page (also the strips above the toolbar and below the footer, and the phone's status bar) uses the same theme colours as the game.
+  useEffect(() => {
+    const r = document.documentElement, b1 = L.cBg1 || theme.v['--bg1'], b2 = L.cBg2 || theme.v['--bg2'];
+    r.style.setProperty('--bg1', b1); r.style.setProperty('--bg2', b2); document.body.style.background = '';
+    let m = document.querySelector('meta[name="theme-color"]'); if (!m) { m = document.createElement('meta'); m.name = 'theme-color'; document.head.appendChild(m); }
+    m.content = b1;
+  }, [theme, L.cBg1, L.cBg2]);
 
 
   const openPanel = tab => {
-    setDraft(d => d || { L: { ...L }, cfg: cfg ? { ...cfg, disabled: [...cfg.disabled], picked: [...cfg.picked] } : null });
+    setDraft(d => d || { L: { ...Lr }, cfg: cfg ? { ...cfg, disabled: [...cfg.disabled], picked: [...cfg.picked] } : null });
     setPanel(tab);
   };
-  const closePanel = () => { setPanel(null); setDraft(null); };   // closing without saving discards the draft
+  const closePanel = () => { setPanel(null); setDraft(null); setPrev(null); };   // closing without saving discards the draft
   const admin = (a, extra = {}) => socket.emit('admin', { a, pin, ...extra }, r => {
     if (r && !r.ok) { setMsg(r.error); openPanel('admin'); } else setMsg('');
   });
@@ -303,6 +403,13 @@ export default function App() {
       flash(factory ? '🏭 Factory settings restored' : '↩️ Defaults restored'); closePanel();
     });
   };
+  const resetWin = p => setDraft(d => {   // put ONE floating window back to its default settings
+    const nl = { ...d.L }; winKeys(p).forEach(k => { nl[k] = DEFAULTS[k]; });
+    const extra = { g: ['showFeed', 'feedSecs'], w: ['showPopup'], l: [] }[p]; extra.forEach(k => { nl[k] = DEFAULTS[k]; });
+    const cfgReset = { g: {}, w: { popupSecs: 8 }, l: { lbSecs: 10, showLbOverlay: true } }[p];
+    return { ...d, L: nl, cfg: d.cfg ? { ...d.cfg, ...cfgReset } : d.cfg };
+  });
+  const resetTiles = () => setDraft(d => { const nl = { ...d.L, tileShape: DEFAULTS.tileShape, tileScale: DEFAULTS.tileScale }; Object.keys(TDEF).forEach(k => { nl[k] = DEFAULTS[k]; }); return { ...d, L: nl }; });
   const saveTikTok = (goLive, clearKey = false) => {   // Live tab: username + Euler key -> server
     socket.emit('admin', { a: 'tiktok', pin, username: ttUser.trim(), apiKey: ttKey, clearKey }, r => {
       if (r && !r.ok) { setTtMsg('❌ ' + r.error + ' (type the Admin PIN in the Admin tab)'); return; }
@@ -353,7 +460,7 @@ export default function App() {
   // Mini leaderboard: row height is calculated from the room the zone really has, so rows shrink to fit and can never spill into the footer.
   const availLb = z3 * CQ - 2, nRows = Math.max(1, Math.min(L.lbRows, Math.floor(availLb / 5.5)));
   const lh = Math.min(10, availLb / nRows) - 1;
-  const style = { ...theme.v, ...(L.cBg1 && { '--bg1': L.cBg1 }), ...(L.cBg2 && { '--bg2': L.cBg2 }), ...(L.cA1 && { '--a1': L.cA1 }), ...(L.cA2 && { '--a2': L.cA2 }), ...(L.cTxt && { '--text': L.cTxt }), '--fs': L.fontScale / 100, '--ff': FONTS[L.font][1], '--tf': (TFONTS[L.titleFont] || TFONTS.lilita)[1] === 'inherit' ? FONTS[L.font][1] : (TFONTS[L.titleFont] || TFONTS.lilita)[1], '--tr': RADIUS[L.tileShape], '--lh': lh, '--barH': bl.H, gridTemplateRows: `auto minmax(0,${z1}fr) minmax(0,${zg}fr) minmax(0,${z2}fr) minmax(0,${z3}fr) minmax(0,${z4}fr)` };
+  const style = { ...themeVars(L), ...tileVars(L), ...(L.cTitle && { '--tcol': L.cTitle }), '--fs': L.fontScale / 100, '--ff': FONTS[L.font][1], '--tf': (TFONTS[L.titleFont] || TFONTS.lilita)[1] === 'inherit' ? FONTS[L.font][1] : (TFONTS[L.titleFont] || TFONTS.lilita)[1], '--tr': RADIUS[L.tileShape], '--lh': lh, '--barH': bl.H, gridTemplateRows: `auto minmax(0,${z1}fr) minmax(0,${zg}fr) minmax(0,${z2}fr) minmax(0,${z3}fr) minmax(0,${z4}fr)` };
   const hid = on => (on ? '' : ' hid');
   const fval = it => (it.src === 'cfg' ? cfg?.[it.f.k] : L[it.f.k]);
   const fset = (it, v) => { if (it.src === 'cfg') { setCfg(c => ({ ...c, [it.f.k]: v })); admin('set', { patch: { [it.f.k]: v } }); } else setLocal(it.f.k, v); };
@@ -385,7 +492,7 @@ export default function App() {
   const stage = won ? (s.lbSecs > 0 && s.full?.length && left <= s.lbSecs ? 'lb' : 'pop') : null;   // winner window first, full leaderboard for the last lbSecs
 
   return (
-    <div className={'stage' + (L.reduceMotion ? ' calm' : '')} style={style}>
+    <div className={'stage' + (L.reduceMotion ? ' calm' : '') + (L.tShadow === false ? ' nosh' : '') + (L.tBob === false ? ' nobob' : '')} style={style}>
       {mmenu && (
         <div className="menu wide">
           {Object.entries(MODES).map(([k, x]) => (
@@ -405,7 +512,7 @@ export default function App() {
 
       {/* ALWAYS-VISIBLE HOST TOOLBAR */}
       {(() => {
-        const brand = L.showTitle && <BrandTitle text={L.title} on dep={L.font + L.titleFont + L.fontScale + L.theme + tbIds.length + bl.single} />;
+        const brand = L.showTitle && <BrandTitle text={L.title} on fs={L.fontScale / 100} dep={L.font + L.titleFont + L.fontScale + L.theme + tbIds.length + bl.single} />;
         const setBtn = <button className={'set' + (panel ? ' hot' : '')} onClick={() => (panel ? closePanel() : openPanel('look'))} title="Settings">⚙️</button>;
         const btns = ids => ids.map(id => <Fragment key={id}>{tbBtn(id)}</Fragment>);
         return bl.single ? (
@@ -427,21 +534,23 @@ export default function App() {
         <CatBanner text={s.category} on={L.showCategory} dep={L.fontScale + L.font} />
       </header>
 
-      {/* GUESS WINDOW - its own grid row directly under the category, so it can never cover the puzzle letters */}
+      {/* GUESS WINDOW - normally sits in its own grid row directly under the category (never covers the puzzle); can be moved / resized in ⚙️ -> Windows */}
       <section className="z zg" style={{ '--gh': gh + 'cqw' }}>
-        <div className={'gwin' + (L.showFeed && gw ? '' : ' off')}>
-          {gw && (
-            <div key={gw.id} className={'gmsg' + (gw.ok ? ' ok' : '')}>
-              <Avatar pic={gw.pic} name={gw.user} size="var(--gh)" />
-              <span className="gtx"><b>@{gw.user}</b> {gw.text}</span>
-            </div>
-          )}
+        <div className="gpos" style={winPos(L, 'g')}>
+          <div className={'gwin' + ((prev === 'g' || (L.showFeed && gws.length)) ? '' : ' off') + (L.gRows > 1 ? ' multi' : '')} style={{ '--gw': L.gW, background: winBg(L, 'g', 'var(--panel)') }}>
+            {(prev === 'g' ? SAMPLE_G : gws).slice(-Math.max(1, L.gRows)).map(m => (
+              <div key={m.id} className={'gmsg' + (m.ok ? ' ok' : '')}>
+                {L.gAv && <Avatar pic={m.pic} name={m.user} size="var(--gh)" />}
+                <span className="gtx">{L.gNm && <b>@{m.user}</b>} {L.gTx && m.text}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
       {/* ZONE 2 - puzzle board */}
       <section className="z z2">
-        <Board text={reveal && s.answer ? s.answer : s.scrambled} solved={reveal && (!!s.answer || !!s.winner)} scale={L.tileScale} />
+        <Board text={reveal && s.answer ? s.answer : s.scrambled} solved={reveal && (!!s.answer || !!s.winner)} scale={L.tileScale} gap={(L.tGap ?? 8) / 100} />
         <FitText className={'hint' + hid(L.showHint && !reveal && !!s.hint)} dep={s.hint}>{s.hint ? [...s.hint].map(c => (c === ' ' ? '\u00a0' : c === '_' ? '•' : c)).join(' ') : '\u00a0'}</FitText>
         <div className={'strip' + hid(L.showTimer)}>
           {!reveal && <i className="bar-fill" style={{ width: (left / s.total) * 100 + '%' }} />}
@@ -492,22 +601,19 @@ export default function App() {
         {pm === 'test' && s.peek && !reveal && <small className="peek">🔎 Answer: {s.peek}</small>}
       </footer>
 
-      {/* CENTRE OVERLAY: winner window (pic + correct answer), then the full leaderboard */}
-      {stage === 'pop' && L.showPopup && (
-        <div className="ov" key={'p' + s.round}>
-          <div className="pop">
-            <Avatar pic={s.winnerInfo.pic} name={s.winnerInfo.user} size="30cqw" />
-            <b className="pn">@{s.winnerInfo.user}</b>
-            <FitText className="wd" dep={s.winnerInfo.word}>{s.winnerInfo.word || '🎉 Correct!'}</FitText>
-            <div className="pt">+{s.winnerInfo.pts}</div>
-          </div>
+      {/* CENTRE OVERLAYS: winner window (pic + correct answer), then the full leaderboard - each has its own position / size / opacity settings */}
+      {(prev ? prev === 'w' : stage === 'pop' && L.showPopup) && (
+        <div className="ov" key={prev ? 'pw' : 'p' + s.round}>
+          <div className="wpos" style={winPos(L, 'w')}><WinnerCard w={prev ? SAMPLE_W : s.winnerInfo} l={L} /></div>
         </div>
       )}
-      {stage === 'lb' && (
-        <div className="ov lbv" key={'l' + s.round}><FullBoard rows={s.full} secs={s.lbSecs} winner={s.winner} /></div>
+      {prev === 'l' && <div className={'ov lbv' + (L.lDim ? '' : ' nodim')} key="pl"><div className="wpos" style={winPos(L, 'l')}><FullBoard rows={SAMPLE_L} secs={9} winner="player_2" l={L} /></div></div>}
+      {!prev && stage === 'lb' && (
+        <div className={'ov lbv' + (L.lDim ? '' : ' nodim')} key={'l' + s.round}><div className="wpos" style={winPos(L, 'l')}><FullBoard rows={s.full} secs={s.lbSecs} winner={s.winner} l={L} /></div></div>
       )}
 
-      {mlb && <div className="ov lbv" key="mlb"><FullBoard rows={mlb.rows} secs={mlb.secs} winner={null} /></div>}
+      {!prev && mlb && <div className={'ov lbv' + (L.lDim ? '' : ' nodim')} key="mlb"><div className="wpos" style={winPos(L, 'l')}><FullBoard rows={mlb.rows} secs={mlb.secs} winner={null} l={L} /></div></div>}
+      {prev && <button className="prevback" onClick={() => setPrev(null)}>⬅ Back to settings</button>}
       {toast && <div className="toast">{toast}</div>}
       {livePop && pm === 'live' && (
         <div className="livepop" onClick={e => e.target === e.currentTarget && setLivePop(false)}>
@@ -525,15 +631,43 @@ export default function App() {
 
       {/* SETTINGS PANEL - edits a draft; nothing changes until Save & Apply */}
       {panel && draft && (() => {
-        const dc = draft.cfg, dirty = JSON.stringify(draft) !== JSON.stringify({ L, cfg });
+        const dc = draft.cfg, dirty = JSON.stringify(draft) !== JSON.stringify({ L: Lr, cfg });
         return (
-          <div className="panel">
+          <div className={'panel' + (prev ? ' away' : '')}>
             <div className="tabs">
-              {[['look', '🎨 Look'], ['layout', '📐 Layout'], ['bar', '🧰 Toolbar'], ['game', '🎮 Game'], ['cats', '🗂 Categories'], ['live', '🔴 Live'], ['mine', '✍️ My Puzzles'], ['admin', '🛠 Admin']].map(([k, n]) => (
+              {[['look', '🎨 Look'], ['layout', '📐 Layout'], ['win', '🪟 Windows'], ['tile', '🔤 Letter Boxes'], ['bar', '🧰 Toolbar'], ['game', '🎮 Game'], ['cats', '🗂 Categories'], ['live', '🔴 Live'], ['mine', '✍️ My Puzzles'], ['admin', '🛠 Admin']].map(([k, n]) => (
                 <button key={k} className={panel === k ? 'on' : ''} onClick={() => setPanel(k)}>{n}</button>))}
               <button onClick={closePanel} title="Close without saving">✕</button>
             </div>
             {(panel === 'look' || panel === 'layout') && FIELDS[panel].map(f => <Field key={f.k} f={f} v={draft.L[f.k]} set={setDL} />)}
+            {panel === 'win' && (
+              <>
+                <p className="note"><b>Every floating window has its own settings.</b> Move it, resize it, change its opacity, choose what it shows and how many rows it uses. Press 👁 Preview to see the window with your unsaved changes, then press Save &amp; Apply.</p>
+                {Object.entries(WINF).map(([p, w]) => (
+                  <div key={p} className="wsec">
+                    <h3 className="sec">{w.title}</h3>
+                    <div className="seg">
+                      <button disabled={p === 'g' && !draft.L.showFeed} onClick={() => setPrev(p)}>👁 Preview</button>
+                      <button onClick={() => resetWin(p)}>↩️ Reset this window</button>
+                    </div>
+                    {p === 'g' && !draft.L.showFeed && <p className="note">Turn “Show this window” on to preview it.</p>}
+                    {w.fields.map(f => (f.src === 'cfg' ? (dc ? <Field key={f.k} f={f} v={dc[f.k]} set={setDC} /> : null) : <Field key={f.k} f={f} v={draft.L[f.k]} set={setDL} />))}
+                  </div>
+                ))}
+              </>
+            )}
+            {panel === 'tile' && (
+              <>
+                <p className="note"><b>Puzzle letter boxes.</b> The preview below shows your unsaved changes (top: puzzle boxes, bottom: solved boxes). Press Save &amp; Apply to use them in the game.</p>
+                <div className={'tilepv' + (draft.L.tShadow === false ? ' nosh' : '') + (draft.L.tBob === false ? ' nobob' : '')}
+                  style={{ ...themeVars(draft.L), ...tileVars(draft.L), '--ff': FONTS[draft.L.font][1], '--tr': RADIUS[draft.L.tileShape], '--t': '10.5cqw' }}>
+                  <div className="word">{[...'SHUFFLE'].map((c, i) => <span key={i} className="tile">{c}</span>)}</div>
+                  <div className="word">{[...'WORD'].map((c, i) => <span key={i} className="tile ok">{c}</span>)}</div>
+                </div>
+                <div className="seg"><button onClick={() => resetTiles()}>↩️ Reset letter boxes to default</button></div>
+                {TILE_F.map(f => <Field key={f.k} f={f} v={draft.L[f.k]} set={setDL} />)}
+              </>
+            )}
             {panel === 'bar' && (() => {
               const cur = Array.isArray(draft.L.toolbar) ? draft.L.toolbar : TB_DEFAULT;
               const put = (id, on) => setDL('toolbar', ALL_IDS.filter(x => (x === id ? on : cur.includes(x))));

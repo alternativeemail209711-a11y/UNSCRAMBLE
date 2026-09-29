@@ -1,4 +1,4 @@
-# Unscramble 🍬
+# Word Shuffle 🍬
 One-folder monorepo: Express + Socket.IO + tiktok-live-connector backend, Vite/React 9:16 frontend.
 
 ## Deploy on Render
@@ -48,11 +48,11 @@ Either way, when a switch is off the answer never leaves the server for that cas
 Every avatar (guess window, winner window, leaderboards) loads the viewer's real circular TikTok picture through a small built-in image proxy (`/avatar`), so pictures show reliably instead of being blocked by hotlink/referrer restrictions, and `.heic` pictures TikTok sometimes sends are skipped in favor of a displayable format. If a picture still can't load, that viewer gets a colored circle with their initial instead of a broken image.
 
 ## Host toolbar (always visible, top of screen)
-Game name **UNSCRAMBLE** (left) · 🧪🔴🎮 mode · 🎨 theme · ⏸ pause/resume · ⏭ skip · 💡 hint now · ⏰ +15s · ⛶ full screen · ⚙️ settings
+Game name **WORD SHUFFLE** (left; "WORD" sits above "SHUFFLE" at 50% of its size, no border) · 🧪🔴🎮 mode · 🎨 theme · ⏸ pause/resume · ⏭ skip · 💡 hint now · ⏰ +15s · ⛶ full screen · ⚙️ settings
 (Categories, show/hide answer and sound now live in ⚙️ settings: Categories tab, Game tab, Layout tab.)
 
 ## Customize the top toolbar
-⚙️ → **🧰 Toolbar**: tick ANY feature to pin it on the top toolbar. Quick actions (mode, theme, pause, skip, hint, +15s, categories, show/hide answer, sound, full screen, reset leaderboard) plus every setting from Look / Layout / Game. On/off settings become one-tap buttons (dimmed when off); sliders, dropdowns and text boxes open a small window when tapped. Game settings changed this way apply straight away on the server; look/layout ones apply on this device. The toolbar **auto-sizes**: with few buttons they get bigger and the game-name badge stretches to fill the rest; with more buttons they shrink to fit one row; with many they wrap into extra rows that fill edge to edge, so there are never gaps or overlaps. ⚙️ is always shown. The game name sits in a badge that always shrinks to fit, whatever font or theme you pick.
+⚙️ → **🧰 Toolbar**: tick ANY feature to pin it on the top toolbar. Quick actions (mode, theme, pause, skip, hint, +15s, categories, show/hide answer, sound, full screen, reset leaderboard) plus every setting from Look / Layout / Game. On/off settings become one-tap buttons (dimmed when off); sliders, dropdowns and text boxes open a small window when tapped. Game settings changed this way apply straight away on the server; look/layout ones apply on this device. The toolbar **auto-sizes**: with few buttons they get bigger and the game-name badge stretches to fill the rest; with more buttons they shrink to fit one row; with many they wrap into extra rows that fill edge to edge, so there are never gaps or overlaps. ⚙️ is always shown. The game name has its own reserved area and always shrinks to fit inside it, whatever font or theme you pick.
 
 ## Save & Apply (⚙️ settings)
 Change anything in Look / Layout / Game / Categories - nothing is applied until you press one of the two buttons at the bottom:
@@ -91,3 +91,17 @@ The stage grid had no explicit column, so the toolbar could widen the whole layo
 - **Next-round countdown**: after every round ends, the footer shows "NEXT ROUND IN N seconds" (Layout tab -> toggle). It sits in the footer row, so it never covers anything.
 - **Leaderboard + live chat side by side** at the bottom (top-N leaderboard on the left, latest chat/guesses on the right). Layout tab: show/hide chat and "Live chat width" (30-65%). They are separate grid columns, so they cannot overlap.
 - **Manual leaderboard**: the new 🏆 toolbar button shows the full leaderboard for the "Full leaderboard duration" (Game tab); press again to hide. If you saved a custom toolbar earlier, tick "Show / hide leaderboard now" in Settings -> Toolbar to add it.
+
+
+## New in this update (Word Shuffle)
+- **Game name**: "WORD SHUFFLE" - the first word is shown above the second at exactly 50% of its font size, with no border or badge. It is always clipped to and fitted inside its own area of the toolbar. Change the text in ⚙️ Look -> "Title text" (first word goes on top, the rest below), the font in "Game name font" (13 new fonts added) and the colour in "Game name colour".
+- **⚙️ 🪟 Windows tab**: every floating window has its **own** settings - 💬 Guess window, 🏆 Winner window (centre) and 📊 Full leaderboard window (also used by the 🏆 toolbar button):
+  - **Time**: guess card stays / winner window stays / full leaderboard stays.
+  - **Rows**: guesses shown at once (1-5) / winner layout 1-4 rows / leaderboard players listed + rows visible at once (extra players auto-scroll).
+  - **What it shows**: picture, @username, guess text / correct word, points, optional heading text, rank / medal.
+  - **Look**: move left-right and up-down, size, width, whole-window opacity, background colour and background opacity (pick a colour to get a solid window; then opacity applies to that colour).
+  - **👁 Preview** shows the window on the game screen with your unsaved changes (auto-returns after 12 s or tap "Back to settings"). **↩️ Reset this window** restores only that window.
+  - Window times for the winner window and full leaderboard are saved on the server like the other Game settings; everything else is saved on this device.
+- **Whole-page theme**: the theme gradient now covers the entire page, including the strips above the toolbar and below the footer on tall phones, in fullscreen, and in landscape (and the phone's status-bar colour). Custom background colours are applied there too.
+- **⚙️ 🔤 Letter Boxes tab**: box shape and max size, letter font (30+ fonts), weight and size, letter colour, box colour (top / bottom), border colour and thickness, box opacity, space between boxes, solved-word colours, glossy highlight, drop shadow and bounce animation - with a live preview at the top of the tab.
+- Old saved names ("UNSCRAMBLE") are switched to the new name once automatically; all other saved settings are kept.

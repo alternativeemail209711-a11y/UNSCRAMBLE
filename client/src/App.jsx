@@ -24,7 +24,7 @@ const TB_DEFAULT = ['mode', 'theme', 'pause', 'skip', 'hint', 'time', 'full'];
 const DEFAULTS = { theme: 'cotton', font: 'cute', titleFont: 'lilita', toolbar: TB_DEFAULT, fontScale: 100, tileShape: 'rounded', tileScale: 100, title: 'UNSCRAMBLE',
   footer: 'Type the correct word(s) in the chat to win!', reduceMotion: false, showTitle: true, showCategory: true, showTimer: true,
   showHint: true, showPopup: true, showLb: true, showFeed: true, showFooter: true, feedSecs: 3, lbRows: 5,
-  z1: 9, zg: 9, z2: 40, z4: 13, sound: false, volume: 60, playerName: 'Me' };
+  z1: 9, zg: 8, z2: 34, z4: 14, sound: false, volume: 60, playerName: 'Me' };
 const MODES = {
   test: ['🧪', 'TEST', 'Test mode', 'Try games & upgrades. TikTok chat is OFF. Use the guess box, ✅ (solve), 💬 (fake chat) and 🤖 (auto-guessing bot).'],
   live: ['🔴', 'LIVE', 'Live mode', 'Go live on TikTok. Reads the TikTok chat. Guess box is hidden.'],
@@ -32,7 +32,7 @@ const MODES = {
 };
 const TT_TEXT = { off: '', nouser: '⚠️ No TikTok username yet - open ⚙️ → 🔴 Live and type it in', connecting: '⏳ Connecting to TikTok…', connected: '✅ Connected to TikTok chat', retrying: '⏳ Not live yet - retrying every 15s' };
 // One-time upgrade: older saved layouts (3 leaderboard rows, old zone heights, 'UNSCRAMBLE LIVE') are replaced by the new layout.
-const LAYOUT_V = '3', OLD_KEYS = ['z1', 'zg', 'z2', 'z4', 'lbRows', 'feedLines'];
+const LAYOUT_V = '4', OLD_KEYS = ['z1', 'zg', 'z2', 'z4', 'lbRows', 'feedLines'];
 const cleanOld = o => { const c = { ...o }; OLD_KEYS.forEach(k => delete c[k]); if (c.title === 'UNSCRAMBLE LIVE') delete c.title; return c; };
 const readSaved = key => {
   let o = {}; try { o = JSON.parse(localStorage.getItem(key) || '{}'); } catch { o = {}; }
@@ -322,16 +322,28 @@ export default function App() {
 
   if (!s) return <div className="stage" style={theme.v}><p className="wait">Connecting…</p></div>;
   const reveal = s.phase === 'reveal';
+  // AUTO-FIT TOOLBAR: button size is calculated from how many buttons are pinned, so they always fill the space with no gaps and no overlap.
+  // Few buttons -> one row (the game-name badge takes the leftover width). Many buttons -> extra rows, each row filled edge to edge.
+  const tbList = Array.isArray(L.toolbar) ? L.toolbar : TB_DEFAULT, tbIds = ALL_IDS.filter(k => tbList.includes(k));
+  const bl = (() => {
+    const Wt = 96, g = 1, Smin = 6.6, Smax = 10.5, Bmin = L.showTitle ? 20 : 0, n = tbIds.length + 1;
+    const s1 = (Wt - Bmin - n * g) / n;
+    if (s1 >= Smin) return { single: true, s: Math.min(Smax, s1), H: 12, rows: [], sr: [] };
+    const m = tbIds.length; let k = 12, nr = 1;
+    for (const ms of [6.6, 5.8, 5.2]) { k = Math.floor((Wt + g) / (ms + g)); nr = Math.ceil(m / k); if (nr <= 3) break; }
+    const rows = [], sr = []; let at = 0;
+    for (let i = 0; i < nr; i++) { const c = Math.floor(m / nr) + (i < m % nr ? 1 : 0); rows.push(tbIds.slice(at, at + c)); at += c; sr.push(Math.min(9, (Wt - (c - 1) * g) / c)); }   // sr = row height; buttons are stretched wide to fill each row edge to edge
+    return { single: false, s: 9, H: 1.2 + 9.5 + g + sr.reduce((a, b) => a + b + g, 0) + 1.2 + 0.8, rows, sr };
+  })();
   // grid zones (% of the space under the toolbar): header | guess window | puzzle | mini leaderboard | footer
   const z1 = L.z1, z4 = L.z4, zg = L.showFeed ? L.zg : 0, z2 = Math.min(L.z2, 86 - z1 - zg - z4), z3 = 100 - z1 - zg - z2 - z4;
-  const CQ = 1.6578;   // stage height under the toolbar in cqw per 1%
+  const CQ = (177.78 - bl.H) / 100;   // stage height under the toolbar in cqw per 1%
   const gwH = zg * CQ - 2, gh = Math.min(11, Math.max(4, gwH - 2.4));   // guess window = exactly ONE line
   // Mini leaderboard: row height is calculated from the room the zone really has, so rows shrink to fit and can never spill into the footer.
   const availLb = z3 * CQ - 2, nRows = Math.max(1, Math.min(L.lbRows, Math.floor(availLb / 5.5)));
-  const lh = Math.min(9, availLb / nRows) - 1;
-  const style = { ...theme.v, '--fs': L.fontScale / 100, '--ff': FONTS[L.font][1], '--tf': (TFONTS[L.titleFont] || TFONTS.lilita)[1] === 'inherit' ? FONTS[L.font][1] : (TFONTS[L.titleFont] || TFONTS.lilita)[1], '--tr': RADIUS[L.tileShape], '--lh': lh, gridTemplateRows: `auto minmax(0,${z1}fr) minmax(0,${zg}fr) minmax(0,${z2}fr) minmax(0,${z3}fr) minmax(0,${z4}fr)` };
+  const lh = Math.min(10, availLb / nRows) - 1;
+  const style = { ...theme.v, '--fs': L.fontScale / 100, '--ff': FONTS[L.font][1], '--tf': (TFONTS[L.titleFont] || TFONTS.lilita)[1] === 'inherit' ? FONTS[L.font][1] : (TFONTS[L.titleFont] || TFONTS.lilita)[1], '--tr': RADIUS[L.tileShape], '--lh': lh, '--barH': bl.H, gridTemplateRows: `auto minmax(0,${z1}fr) minmax(0,${zg}fr) minmax(0,${z2}fr) minmax(0,${z3}fr) minmax(0,${z4}fr)` };
   const hid = on => (on ? '' : ' hid');
-  const tbList = Array.isArray(L.toolbar) ? L.toolbar : TB_DEFAULT, tbIds = ALL_IDS.filter(k => tbList.includes(k));
   const fval = it => (it.src === 'cfg' ? cfg?.[it.f.k] : L[it.f.k]);
   const fset = (it, v) => { if (it.src === 'cfg') { setCfg(c => ({ ...c, [it.f.k]: v })); admin('set', { patch: { [it.f.k]: v } }); } else setLocal(it.f.k, v); };
   const openPop = id => { setMenu(false); setMmenu(false); setPop(p => (p === id ? null : id)); };
@@ -380,11 +392,19 @@ export default function App() {
       )}
 
       {/* ALWAYS-VISIBLE HOST TOOLBAR */}
-      <nav className="bar">
-        <BrandTitle text={L.title} on={L.showTitle} dep={L.font + L.titleFont + L.fontScale + L.theme + tbIds.length} />
-        <div className="tbs">{tbIds.map(id => <Fragment key={id}>{tbBtn(id)}</Fragment>)}</div>
-        <button className={'set' + (panel ? ' hot' : '')} onClick={() => (panel ? closePanel() : openPanel('look'))} title="Settings">⚙️</button>
-      </nav>
+      {(() => {
+        const brand = L.showTitle && <BrandTitle text={L.title} on dep={L.font + L.titleFont + L.fontScale + L.theme + tbIds.length + bl.single} />;
+        const setBtn = <button className={'set' + (panel ? ' hot' : '')} onClick={() => (panel ? closePanel() : openPanel('look'))} title="Settings">⚙️</button>;
+        const btns = ids => ids.map(id => <Fragment key={id}>{tbBtn(id)}</Fragment>);
+        return bl.single ? (
+          <nav className={'bar' + (L.showTitle ? '' : ' nobrand')} style={{ '--bs': bl.s }}>{brand}{btns(tbIds)}{setBtn}</nav>
+        ) : (
+          <nav className="bar multi">
+            <div className="brow" style={{ '--bs': bl.s }}>{brand}{setBtn}</div>
+            {bl.rows.map((r, i) => <div className="trow" key={i} style={{ '--bs': bl.sr[i] }}>{btns(r)}</div>)}
+          </nav>
+        );
+      })()}
       {pop && FMAP[pop] && (() => {
         const it = FMAP[pop], v = fval(it);
         return (<div className="menu pp"><Field f={it.f} v={v} set={(k, x) => fset(it, x)} /><button className="act" onClick={() => setPop(null)}>✕ Close</button></div>);

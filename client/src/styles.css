@@ -10,9 +10,9 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden;back
 .hid{visibility:hidden}
 .calm *{animation:none!important;transition:none!important}
 /* HOST TOOLBAR - always visible, big touch targets */
-.bar{position:relative;z-index:30;height:12cqw;padding:0 2cqw;display:flex;align-items:center;justify-content:flex-start;gap:1cqw;background:var(--panel);backdrop-filter:blur(6px);border-bottom:.6cqw dashed var(--te);border-radius:0 0 5cqw 5cqw}
-.bar button{flex:0 0 8cqw;width:8cqw;min-width:0;aspect-ratio:1;padding:0;display:grid;place-items:center;border-radius:35%;border:.5cqw solid var(--te);background:linear-gradient(var(--t1),var(--t2));color:var(--tt);font-size:4.4cqw;line-height:1;cursor:pointer;box-shadow:0 .7cqw 0 var(--te);transition:transform .1s}
-.bar .brand{flex:0 0 24cqw;width:24cqw;min-width:0;height:8.4cqw;display:flex;align-items:center;justify-content:center;padding:0 2cqw;overflow:hidden;border-radius:99px;border:.5cqw solid #fffb;background:linear-gradient(90deg,var(--a1),var(--a2));color:var(--bt);box-shadow:0 .6cqw 0 #0003;font-family:var(--tf);font-weight:400}
+.bar{position:relative;z-index:30;height:calc(var(--barH,12)*1cqw);padding:0 2cqw;display:flex;align-items:center;justify-content:flex-start;gap:1cqw;background:var(--panel);backdrop-filter:blur(6px);border-bottom:.6cqw dashed var(--te);border-radius:0 0 5cqw 5cqw}
+.bar button{flex:0 0 calc(var(--bs,8)*1cqw);width:calc(var(--bs,8)*1cqw);min-width:0;aspect-ratio:1;padding:0;display:grid;place-items:center;border-radius:35%;border:.5cqw solid var(--te);background:linear-gradient(var(--t1),var(--t2));color:var(--tt);font-size:calc(var(--bs,8)*.55cqw);line-height:1;cursor:pointer;box-shadow:0 .7cqw 0 var(--te);transition:transform .1s}
+.bar .brand{flex:1 1 0;width:auto;min-width:0;height:8.4cqw;display:flex;align-items:center;justify-content:center;padding:0 2cqw;overflow:hidden;border-radius:99px;border:.5cqw solid #fffb;background:linear-gradient(90deg,var(--a1),var(--a2));color:var(--bt);box-shadow:0 .6cqw 0 #0003;font-family:var(--tf);font-weight:400}
 .bar .brand span{display:block;flex:none;font-size:calc(5.6cqw*var(--fs));line-height:1.1;letter-spacing:.3cqw;white-space:nowrap;text-shadow:0 .3cqw 0 #0002}
 .bar button:active{transform:translateY(.6cqw);box-shadow:0 .1cqw 0 var(--te)}
 .bar button.hot{background:linear-gradient(var(--a1),var(--a2));color:var(--bt)}
@@ -21,7 +21,7 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden;back
 h1{flex:none;max-width:100%;font-size:calc(7.4cqw*var(--fs));line-height:1.15;font-weight:800;letter-spacing:.5cqw;text-align:center;text-shadow:0 .5cqw 0 var(--panel),0 1cqw 2cqw #0002;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cat{flex:none;max-width:100%;padding:1.6cqw 4cqw;border:.7cqw solid #fff9;border-radius:99px;font-size:calc(5.4cqw*var(--fs));line-height:1.15;font-weight:800;text-align:center;white-space:nowrap;overflow:hidden;color:var(--bt);background:linear-gradient(90deg,var(--a1),var(--a2));box-shadow:0 1cqw 0 #0002,0 1.5cqw 3cqw #0003;animation:bounce 2.6s ease-in-out infinite}
 /* theme dropdown (the only intentional overlay, opens on demand) */
-.menu{position:absolute;z-index:25;top:13cqw;left:50%;transform:translateX(-50%);width:60cqw;max-height:80cqw;overflow:auto;padding:1cqw;border-radius:3cqw;background:var(--bg1);border:1px solid var(--te);box-shadow:0 2cqw 6cqw #0007}
+.menu{position:absolute;z-index:25;top:calc(var(--barH,12)*1cqw + 1cqw);left:50%;transform:translateX(-50%);width:60cqw;max-height:80cqw;overflow:auto;padding:1cqw;border-radius:3cqw;background:var(--bg1);border:1px solid var(--te);box-shadow:0 2cqw 6cqw #0007}
 .menu button{display:flex;align-items:center;gap:2.5cqw;width:100%;padding:2cqw;border:0;border-radius:2cqw;background:none;color:var(--text);font:inherit;font-size:4cqw;text-align:left;cursor:pointer}
 .menu button.on{background:var(--panel);font-weight:800}
 /* ZONE 2: board / hint / timer */
@@ -68,7 +68,7 @@ h1{flex:none;max-width:100%;font-size:calc(7.4cqw*var(--fs));line-height:1.15;fo
 .peek{flex:none;max-width:100%;font-size:calc(3cqw*var(--fs));font-weight:800;opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-1.5cqw)}75%{transform:translateX(1.5cqw)}}
 .bar button.mode{gap:0;align-content:center}
-.bar button.mode small{display:block;font-size:1.8cqw;line-height:1;font-weight:800;margin-top:-.3cqw}
+.bar button.mode small{display:block;font-size:calc(var(--bs,8)*.22cqw);line-height:1;font-weight:800;margin-top:-.3cqw}
 .bar button.m-live{background:linear-gradient(#ff6b81,#e11d48);color:#fff;border-color:#9f1239;box-shadow:0 .7cqw 0 #9f1239}
 .bar button.m-test{background:linear-gradient(#ffe08a,#fbbf24);color:#4a3200;border-color:#b45309;box-shadow:0 .7cqw 0 #b45309}
 .bar button.m-offline{background:linear-gradient(#a7f3d0,#34d399);color:#064e3b;border-color:#047857;box-shadow:0 .7cqw 0 #047857}
@@ -77,7 +77,7 @@ h1{flex:none;max-width:100%;font-size:calc(7.4cqw*var(--fs));line-height:1.15;fo
 .menu button small{font-size:2.8cqw;font-weight:500;opacity:.8;white-space:normal}
 .menu .note{font-size:2.9cqw;margin:1.5cqw 2cqw}
 /* settings panel */
-.panel{position:absolute;inset:12cqw 0 0 0;z-index:20;overflow:auto;padding:12px;font-size:15px;background:linear-gradient(160deg,var(--bg1),var(--bg2))}
+.panel{position:absolute;inset:calc(var(--barH,12)*1cqw) 0 0 0;z-index:20;overflow:auto;padding:12px;font-size:15px;background:linear-gradient(160deg,var(--bg1),var(--bg2))}
 .tabs{top:-12px;display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;position:sticky;top:-12px;padding:8px 0;background:var(--bg1);z-index:1}
 .tabs button,.act{padding:8px 12px;border-radius:10px;border:1px solid var(--te);background:var(--panel);color:var(--text);font:inherit;cursor:pointer}
 .tabs button.on{background:var(--a1);color:var(--bt);font-weight:800}
@@ -102,7 +102,7 @@ h1{flex:none;max-width:100%;font-size:calc(7.4cqw*var(--fs));line-height:1.15;fo
 .savebar .act{margin:6px 0 0;padding:11px 12px;font-weight:800}
 .savebar .act.alt{background:var(--a2);color:var(--bt)}
 .savebar .note{margin:0 0 4px}.savebar .err{margin:0 0 4px}.dirty{color:var(--gold);font-weight:800;opacity:1}
-.toast{position:absolute;z-index:40;left:50%;top:15cqw;transform:translateX(-50%);padding:2cqw 5cqw;border-radius:99px;background:var(--a1);color:var(--bt);font-size:4cqw;font-weight:800;white-space:nowrap;box-shadow:0 1cqw 3cqw #0005;animation:in-up .25s both}
+.toast{position:absolute;z-index:40;left:50%;top:calc(var(--barH,12)*1cqw + 3cqw);transform:translateX(-50%);padding:2cqw 5cqw;border-radius:99px;background:var(--a1);color:var(--bt);font-size:4cqw;font-weight:800;white-space:nowrap;box-shadow:0 1cqw 3cqw #0005;animation:in-up .25s both}
 
 .play button.hot{background:linear-gradient(var(--a1),var(--a2));color:var(--bt);box-shadow:0 0 0 .8cqw var(--a1)}
 
@@ -116,7 +116,7 @@ h1{flex:none;max-width:100%;font-size:calc(7.4cqw*var(--fs));line-height:1.15;fo
 .gmsg.ok{background:#19c46b55;padding-right:2cqw}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-.4cqw)}}
 /* CENTRE OVERLAY (winner window + full leaderboard). Sits under the toolbar, above the puzzle; never blocks taps. */
-.ov{position:absolute;inset:12cqw 0 0 0;z-index:15;display:grid;place-items:center;pointer-events:none;animation:fade .3s both}
+.ov{position:absolute;inset:calc(var(--barH,12)*1cqw) 0 0 0;z-index:15;display:grid;place-items:center;pointer-events:none;animation:fade .3s both}
 .ov.lbv{background:#0006}
 .pop{width:82cqw;display:flex;flex-direction:column;align-items:center;gap:2.2cqw;padding:5cqw 4cqw 4cqw;border-radius:7cqw;background:var(--bg1);border:1cqw solid var(--gold);box-shadow:0 2cqw 8cqw #000a,0 0 0 1.2cqw #fff6;animation:pop .5s cubic-bezier(.34,1.56,.64,1) both}
 .pop .av{width:var(--s);height:var(--s);border-width:1cqw;box-shadow:0 0 0 1.2cqw var(--gold)}
@@ -149,3 +149,13 @@ h1{flex:none;max-width:100%;font-size:calc(7.4cqw*var(--fs));line-height:1.15;fo
 .menu.pp{width:88cqw;font-size:15px;padding:10px 12px}
 .menu.pp .act{margin:6px 0 0;padding:9px 12px}
 .sec{margin:14px 0 2px;font-size:15px;color:var(--gold);border-bottom:1px solid var(--te);padding-bottom:4px}
+
+/* auto-fit toolbar rows */
+.bar.nobrand{justify-content:center}
+.bar.multi{flex-direction:column;align-items:stretch;justify-content:center;gap:1cqw;padding:1.2cqw 2cqw;height:auto}
+.bar .brow{display:flex;align-items:center;gap:1cqw;height:9.5cqw}
+.bar .brow .brand{height:8.6cqw}
+.bar .trow{display:flex;gap:1cqw;width:100%}
+.bar .trow button{flex:1 1 0;width:auto;min-width:0;aspect-ratio:auto;height:calc(var(--bs,8)*1cqw);border-radius:30%}
+.bar button.set{flex:0 0 calc(var(--bs,8)*1cqw)}
+.bar .brow button.set{width:9cqw;flex:0 0 9cqw;font-size:5cqw}

@@ -52,7 +52,7 @@ Game name **UNSCRAMBLE** (left) · 🧪🔴🎮 mode · 🎨 theme · ⏸ pause/
 (Categories, show/hide answer and sound now live in ⚙️ settings: Categories tab, Game tab, Layout tab.)
 
 ## Customize the top toolbar
-⚙️ → **🧰 Toolbar**: tick ANY feature to pin it on the top toolbar. Quick actions (mode, theme, pause, skip, hint, +15s, categories, show/hide answer, sound, full screen, reset leaderboard) plus every setting from Look / Layout / Game. On/off settings become one-tap buttons (dimmed when off); sliders, dropdowns and text boxes open a small window when tapped. Game settings changed this way apply straight away on the server; look/layout ones apply on this device. The button strip scrolls sideways if you pin many; ⚙️ is always shown. The game name sits in a badge that always shrinks to fit, whatever font or theme you pick.
+⚙️ → **🧰 Toolbar**: tick ANY feature to pin it on the top toolbar. Quick actions (mode, theme, pause, skip, hint, +15s, categories, show/hide answer, sound, full screen, reset leaderboard) plus every setting from Look / Layout / Game. On/off settings become one-tap buttons (dimmed when off); sliders, dropdowns and text boxes open a small window when tapped. Game settings changed this way apply straight away on the server; look/layout ones apply on this device. The toolbar **auto-sizes**: with few buttons they get bigger and the game-name badge stretches to fill the rest; with more buttons they shrink to fit one row; with many they wrap into extra rows that fill edge to edge, so there are never gaps or overlaps. ⚙️ is always shown. The game name sits in a badge that always shrinks to fit, whatever font or theme you pick.
 
 ## Save & Apply (⚙️ settings)
 Change anything in Look / Layout / Game / Categories - nothing is applied until you press one of the two buttons at the bottom:
@@ -71,3 +71,6 @@ Categories whose name contains "english", "common words", "random words" or "dic
 ## Notes
 - Default look is Cotton Candy + Fredoka font. If your phone kept old settings: ⚙️ → Admin → Reset.
 - Test without TikTok: use Test or Offline mode (no URL tricks needed). Big DB: `node generate_db.js` -> `data/puzzles.full.json`.
+
+## Layout (default)
+Puzzle letters and the timer sit higher on the screen, giving the bottom leaderboard (top 5) and the chat/footer area more room. Every zone is its own grid row, so nothing overlaps. Older saved layout heights are replaced by the new ones automatically on first open.

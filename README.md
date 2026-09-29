@@ -52,7 +52,7 @@ Game name **UNSCRAMBLE** (left) · 🧪🔴🎮 mode · 🎨 theme · ⏸ pause/
 (Categories, show/hide answer and sound now live in ⚙️ settings: Categories tab, Game tab, Layout tab.)
 
 ## Customize the top toolbar
-⚙️ → **🧰 Toolbar**: tick or untick which buttons appear (mode, theme, pause, skip, hint, +15s, categories, show/hide answer, sound, full screen). ⚙️ settings is always shown. The game name sits in a badge that always shrinks to fit its own space, whatever font or theme you pick.
+⚙️ → **🧰 Toolbar**: tick ANY feature to pin it on the top toolbar. Quick actions (mode, theme, pause, skip, hint, +15s, categories, show/hide answer, sound, full screen, reset leaderboard) plus every setting from Look / Layout / Game. On/off settings become one-tap buttons (dimmed when off); sliders, dropdowns and text boxes open a small window when tapped. Game settings changed this way apply straight away on the server; look/layout ones apply on this device. The button strip scrolls sideways if you pin many; ⚙️ is always shown. The game name sits in a badge that always shrinks to fit, whatever font or theme you pick.
 
 ## Save & Apply (⚙️ settings)
 Change anything in Look / Layout / Game / Categories - nothing is applied until you press one of the two buttons at the bottom:

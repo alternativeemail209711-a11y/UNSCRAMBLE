@@ -11,8 +11,8 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden;back
 .calm *{animation:none!important;transition:none!important}
 /* HOST TOOLBAR - always visible, big touch targets */
 .bar{position:relative;z-index:30;height:12cqw;padding:0 2cqw;display:flex;align-items:center;justify-content:flex-start;gap:1cqw;background:var(--panel);backdrop-filter:blur(6px);border-bottom:.6cqw dashed var(--te);border-radius:0 0 5cqw 5cqw}
-.bar button{flex:1 1 0;min-width:0;max-width:8.6cqw;aspect-ratio:1;padding:0;display:grid;place-items:center;border-radius:35%;border:.5cqw solid var(--te);background:linear-gradient(var(--t1),var(--t2));color:var(--tt);font-size:4.4cqw;line-height:1;cursor:pointer;box-shadow:0 .7cqw 0 var(--te);transition:transform .1s}
-.bar .brand{flex:0 0 calc(var(--bw,30)*1cqw);width:calc(var(--bw,30)*1cqw);min-width:0;height:8.4cqw;display:flex;align-items:center;justify-content:center;padding:0 2cqw;overflow:hidden;border-radius:99px;border:.5cqw solid #fffb;background:linear-gradient(90deg,var(--a1),var(--a2));color:var(--bt);box-shadow:0 .6cqw 0 #0003;font-family:var(--tf);font-weight:400}
+.bar button{flex:0 0 8cqw;width:8cqw;min-width:0;aspect-ratio:1;padding:0;display:grid;place-items:center;border-radius:35%;border:.5cqw solid var(--te);background:linear-gradient(var(--t1),var(--t2));color:var(--tt);font-size:4.4cqw;line-height:1;cursor:pointer;box-shadow:0 .7cqw 0 var(--te);transition:transform .1s}
+.bar .brand{flex:0 0 24cqw;width:24cqw;min-width:0;height:8.4cqw;display:flex;align-items:center;justify-content:center;padding:0 2cqw;overflow:hidden;border-radius:99px;border:.5cqw solid #fffb;background:linear-gradient(90deg,var(--a1),var(--a2));color:var(--bt);box-shadow:0 .6cqw 0 #0003;font-family:var(--tf);font-weight:400}
 .bar .brand span{display:block;flex:none;font-size:calc(5.6cqw*var(--fs));line-height:1.1;letter-spacing:.3cqw;white-space:nowrap;text-shadow:0 .3cqw 0 #0002}
 .bar button:active{transform:translateY(.6cqw);box-shadow:0 .1cqw 0 var(--te)}
 .bar button.hot{background:linear-gradient(var(--a1),var(--a2));color:var(--bt)}
@@ -138,3 +138,14 @@ h1{flex:none;max-width:100%;font-size:calc(7.4cqw*var(--fs));line-height:1.15;fo
 .fbrow .who em{font-size:calc(var(--rh)*.31cqw*var(--fs))}
 .fbrow .pts{font-size:calc(var(--rh)*.5cqw*var(--fs))}
 @keyframes fade{from{opacity:0}to{opacity:1}}
+
+/* toolbar: game name | scrolling button strip | fixed settings button */
+.bar .tbs{flex:1 1 0;min-width:0;height:100%;display:flex;align-items:center;gap:1cqw;overflow-x:auto;overflow-y:hidden;padding:0 .8cqw 1cqw;scrollbar-width:none;-webkit-overflow-scrolling:touch;touch-action:pan-x}
+.bar .tbs::-webkit-scrollbar{display:none}
+.bar .tbs button{flex:none}
+.bar button.set{flex:none}
+.bar button.off{opacity:.5;filter:grayscale(.5)}
+.bar button:disabled{opacity:.35}
+.menu.pp{width:88cqw;font-size:15px;padding:10px 12px}
+.menu.pp .act{margin:6px 0 0;padding:9px 12px}
+.sec{margin:14px 0 2px;font-size:15px;color:var(--gold);border-bottom:1px solid var(--te);padding-bottom:4px}

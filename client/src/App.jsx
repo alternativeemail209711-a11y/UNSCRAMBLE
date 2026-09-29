@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
 import { THEMES } from './themes.js';
 import './styles.css';
@@ -19,7 +19,7 @@ const TFONTS = {   // game-name fonts (Google Fonts, with safe fallbacks)
 };
 // Buttons that can appear on the top toolbar (settings ⚙️ is always there so you can never lock yourself out)
 const TB = [['mode', '🧪', 'Mode (Test / Live / Solo)'], ['theme', '🎨', 'Theme'], ['pause', '⏸️', 'Pause / Resume'], ['skip', '⏭️', 'Skip round'], ['hint', '💡', 'Hint now'],
-  ['time', '⏰', 'Add 15 seconds'], ['cats', '🗂️', 'Categories'], ['answer', '👁️', 'Show / hide correct answer'], ['sound', '🔔', 'Sound on / off'], ['full', '⛶', 'Full screen']];
+  ['time', '⏰', 'Add 15 seconds'], ['cats', '🗂️', 'Categories'], ['answer', '👁️', 'Show / hide correct answer'], ['sound', '🔔', 'Sound on / off'], ['full', '⛶', 'Full screen'], ['resetlb', '🧹', 'Reset leaderboard']];
 const TB_DEFAULT = ['mode', 'theme', 'pause', 'skip', 'hint', 'time', 'full'];
 const DEFAULTS = { theme: 'cotton', font: 'cute', titleFont: 'lilita', toolbar: TB_DEFAULT, fontScale: 100, tileShape: 'rounded', tileScale: 100, title: 'UNSCRAMBLE',
   footer: 'Type the correct word(s) in the chat to win!', reduceMotion: false, showTitle: true, showCategory: true, showTimer: true,
@@ -70,6 +70,17 @@ const FIELDS = {
     rg('hintEvery', 'Next hint every', 3, 60, 1, 's'), rg('maxHints', 'Max hints', 0, 10),
     tg('botOn', '🤖 Test bot guesses by itself (Test mode only)'), rg('botEvery', 'Bot guesses every', 1, 30, 1, 's'), rg('botSkill', 'Chance the bot solves a round', 0, 100, 5, '%')]
 };
+
+// ---- TOOLBAR REGISTRY: every toggle / slider / dropdown / text setting can be pinned to the top toolbar as a button.
+const ICONS = { font: '🔤', fontScale: '🔠', tileShape: '🔷', tileScale: '🔳', title: '✏️', footer: '📝', playerName: '👤', reduceMotion: '🐢', showTitle: '🏷️', showCategory: '📂',
+  showTimer: '⏱️', showHint: '🔎', showFeed: '💬', showPopup: '🏆', showLb: '📊', showFooter: '📄', feedSecs: '⏳', lbRows: '🔢', z1: '📏', zg: '📏', z2: '📏', z4: '📏', volume: '🔊',
+  roundSeconds: '⏲️', popupSecs: '🕒', showLbOverlay: '🥇', lbSecs: '🕓', showAnswer: '⌛', revealSeconds: '🕰️', minLetters: '🔽', maxLetters: '🔼', allowMulti: '🔀',
+  spaceless: '⎵', hints: '💡', hintStart: '🚦', hintEvery: '🔁', maxHints: '🔟', botOn: '🤖', botEvery: '⏩', botSkill: '🎯', titleFont: '🅰️' };
+const SKIP = new Set(['theme', 'sound', 'showAnswerWin']);   // these already have their own built-in buttons
+const FGROUPS = [['look', '🎨 Look settings'], ['layout', '📐 Layout settings'], ['game', '🎮 Game settings']];
+const FITEMS = FGROUPS.flatMap(([g]) => FIELDS[g].filter(f => !SKIP.has(f.k)).map(f => ({ id: 'f:' + f.k, f, src: g === 'game' ? 'cfg' : 'L' })));
+const FMAP = Object.fromEntries(FITEMS.map(x => [x.id, x]));
+const ALL_IDS = [...TB.map(x => x[0]), ...FITEMS.map(x => x.id)];
 
 let ac;
 function beep(vol, notes) {
@@ -215,7 +226,7 @@ export default function App() {
   const [s, setS] = useState(null), [cfg, setCfg] = useState(null), [cats, setCats] = useState([]), [pinReq, setPinReq] = useState(false);
   const [gw, setGw] = useState(null), [left, setLeft] = useState(0);   // gw = the ONE guess card currently floating (or null)
   const gwT = useRef({ shownAt: 0, hide: 0, swap: 0, secs: 3 });
-  const [menu, setMenu] = useState(false), [mmenu, setMmenu] = useState(false), [panel, setPanel] = useState(null);
+  const [menu, setMenu] = useState(false), [mmenu, setMmenu] = useState(false), [panel, setPanel] = useState(null), [pop, setPop] = useState(null);
   const [pm, setPm] = useState('test'), [tt, setTt] = useState({ status: 'off', user: '' }), [fb, setFb] = useState('');
   const [ttUser, setTtUser] = useState(''), [ttKey, setTtKey] = useState(''), [ttMsg, setTtMsg] = useState('');
   const gref = useRef(null);
@@ -320,7 +331,31 @@ export default function App() {
   const lh = Math.min(9, availLb / nRows) - 1;
   const style = { ...theme.v, '--fs': L.fontScale / 100, '--ff': FONTS[L.font][1], '--tf': (TFONTS[L.titleFont] || TFONTS.lilita)[1] === 'inherit' ? FONTS[L.font][1] : (TFONTS[L.titleFont] || TFONTS.lilita)[1], '--tr': RADIUS[L.tileShape], '--lh': lh, gridTemplateRows: `auto minmax(0,${z1}fr) minmax(0,${zg}fr) minmax(0,${z2}fr) minmax(0,${z3}fr) minmax(0,${z4}fr)` };
   const hid = on => (on ? '' : ' hid');
-  const tbList = Array.isArray(L.toolbar) ? L.toolbar : TB_DEFAULT, tb = Object.fromEntries(TB.map(([k]) => [k, tbList.includes(k)])), tbN = tbList.filter(k => TB.some(x => x[0] === k)).length + 1;
+  const tbList = Array.isArray(L.toolbar) ? L.toolbar : TB_DEFAULT, tbIds = ALL_IDS.filter(k => tbList.includes(k));
+  const fval = it => (it.src === 'cfg' ? cfg?.[it.f.k] : L[it.f.k]);
+  const fset = (it, v) => { if (it.src === 'cfg') { setCfg(c => ({ ...c, [it.f.k]: v })); admin('set', { patch: { [it.f.k]: v } }); } else setLocal(it.f.k, v); };
+  const openPop = id => { setMenu(false); setMmenu(false); setPop(p => (p === id ? null : id)); };
+  const tbBtn = id => {
+    if (FMAP[id]) {
+      const it = FMAP[id], v = fval(it), t = it.f.t, ic = ICONS[it.f.k] || '🔘';
+      if (t === 'toggle') return <button className={v ? 'hot' : 'off'} disabled={it.src === 'cfg' && !cfg} onClick={() => { fset(it, !v); flash(ic + ' ' + it.f.l + ': ' + (!v ? 'ON' : 'OFF')); }} title={it.f.l + (v ? ' (on)' : ' (off)')}>{ic}</button>;
+      return <button className={pop === id ? 'hot' : ''} disabled={it.src === 'cfg' && !cfg} onClick={() => openPop(id)} title={it.f.l}>{ic}</button>;
+    }
+    switch (id) {
+      case 'mode': return <button className={'mode m-' + pm} onClick={() => { setPop(null); setMmenu(m => !m); setMenu(false); }} title="Mode: Test / Live / Offline">{MODES[pm][0]}<small>{MODES[pm][1]}</small></button>;
+      case 'theme': return <button onClick={() => { setPop(null); setMenu(m => !m); setMmenu(false); }} title="Theme">{theme.icon}</button>;
+      case 'pause': return <button className={s.paused ? 'hot' : ''} onClick={() => admin('pause')} title={s.paused ? 'Resume' : 'Pause'}>{s.paused ? '▶️' : '⏸️'}</button>;
+      case 'skip': return <button onClick={() => admin('skip')} title="Skip / next round">⏭️</button>;
+      case 'hint': return <button onClick={() => admin('hint')} title="Give a hint now">💡</button>;
+      case 'time': return <button onClick={() => admin('time')} title="Add 15 seconds">⏰</button>;
+      case 'cats': return <button className={cfg?.mode === 'specific' ? 'hot' : ''} onClick={() => (panel === 'cats' ? closePanel() : openPanel('cats'))} title="Categories">🗂️</button>;
+      case 'answer': return <button className={cfg && !cfg.showAnswerWin ? 'hot' : ''} onClick={toggleAnswer} title={cfg?.showAnswerWin ? 'Correct answer is shown when guessed (tap to hide)' : 'Correct answer is hidden when guessed (tap to show)'}>{cfg && !cfg.showAnswerWin ? '🙈' : '👁️'}</button>;
+      case 'sound': return <button className={L.sound ? 'hot' : ''} onClick={() => setLocal('sound', !L.sound)} title="Sound on/off">{L.sound ? '🔔' : '🔕'}</button>;
+      case 'full': return <button onClick={fullscreen} title="Full screen">⛶</button>;
+      case 'resetlb': return <button onClick={() => window.confirm('Reset the leaderboard?') && admin('reset')} title="Reset leaderboard">🧹</button>;
+      default: return null;
+    }
+  };
   const rows = s.leaderboard.slice(0, nRows);   // only real winners - no empty placeholder rows
   const won = reveal && s.winnerInfo;
   const stage = won ? (s.lbSecs > 0 && s.full?.length && left <= s.lbSecs ? 'lb' : 'pop') : null;   // winner window first, full leaderboard for the last lbSecs
@@ -345,20 +380,15 @@ export default function App() {
       )}
 
       {/* ALWAYS-VISIBLE HOST TOOLBAR */}
-      <nav className="bar" style={{ '--bw': tbN <= 7 ? 30 : tbN <= 9 ? 26 : 22 }}>
-        <BrandTitle text={L.title} on={L.showTitle} dep={L.font + L.titleFont + L.fontScale + L.theme + tbN} />
-        {tb.mode && <button className={'mode m-' + pm} onClick={() => { setMmenu(m => !m); setMenu(false); }} title="Mode: Test / Live / Offline">{MODES[pm][0]}<small>{MODES[pm][1]}</small></button>}
-        {tb.theme && <button onClick={() => { setMenu(m => !m); setMmenu(false); }} title="Theme">{theme.icon}</button>}
-        {tb.pause && <button className={s.paused ? 'hot' : ''} onClick={() => admin('pause')} title={s.paused ? 'Resume' : 'Pause'}>{s.paused ? '▶️' : '⏸️'}</button>}
-        {tb.skip && <button onClick={() => admin('skip')} title="Skip / next round">⏭️</button>}
-        {tb.hint && <button onClick={() => admin('hint')} title="Give a hint now">💡</button>}
-        {tb.time && <button onClick={() => admin('time')} title="Add 15 seconds">⏰</button>}
-        {tb.cats && <button className={cfg?.mode === 'specific' ? 'hot' : ''} onClick={() => (panel === 'cats' ? closePanel() : openPanel('cats'))} title="Categories">🗂️</button>}
-        {tb.answer && <button className={cfg && !cfg.showAnswerWin ? 'hot' : ''} onClick={toggleAnswer} title={cfg?.showAnswerWin ? 'Correct answer is shown when guessed (tap to hide)' : 'Correct answer is hidden when guessed (tap to show)'}>{cfg && !cfg.showAnswerWin ? '🙈' : '👁️'}</button>}
-        {tb.sound && <button className={L.sound ? 'hot' : ''} onClick={() => setLocal('sound', !L.sound)} title="Sound on/off">{L.sound ? '🔔' : '🔕'}</button>}
-        {tb.full && <button onClick={fullscreen} title="Full screen">⛶</button>}
-        <button className={panel ? 'hot' : ''} onClick={() => (panel ? closePanel() : openPanel('look'))} title="Settings">⚙️</button>
+      <nav className="bar">
+        <BrandTitle text={L.title} on={L.showTitle} dep={L.font + L.titleFont + L.fontScale + L.theme + tbIds.length} />
+        <div className="tbs">{tbIds.map(id => <Fragment key={id}>{tbBtn(id)}</Fragment>)}</div>
+        <button className={'set' + (panel ? ' hot' : '')} onClick={() => (panel ? closePanel() : openPanel('look'))} title="Settings">⚙️</button>
       </nav>
+      {pop && FMAP[pop] && (() => {
+        const it = FMAP[pop], v = fval(it);
+        return (<div className="menu pp"><Field f={it.f} v={v} set={(k, x) => fset(it, x)} /><button className="act" onClick={() => setPop(null)}>✕ Close</button></div>);
+      })()}
 
       {/* ZONE 1 - header + category */}
       <header className="z z1">
@@ -446,20 +476,27 @@ export default function App() {
               <button onClick={closePanel} title="Close without saving">✕</button>
             </div>
             {(panel === 'look' || panel === 'layout') && FIELDS[panel].map(f => <Field key={f.k} f={f} v={draft.L[f.k]} set={setDL} />)}
-            {panel === 'bar' && (
-              <>
-                <p className="note"><b>Choose which buttons appear at the top.</b> The game name always stays. ⚙️ Settings is always shown so you can never lock yourself out. Press Save &amp; Apply below.</p>
-                {TB.map(([k, ic, name]) => {
-                  const cur = Array.isArray(draft.L.toolbar) ? draft.L.toolbar : TB_DEFAULT;
-                  return (<label className="fld toggle" key={k}><span>{ic} {name}</span>
-                    <input type="checkbox" checked={cur.includes(k)} onChange={e => setDL('toolbar', e.target.checked ? TB.map(x => x[0]).filter(x => x === k || cur.includes(x)) : cur.filter(x => x !== k))} /></label>);
-                })}
-                <div className="seg">
-                  <button onClick={() => setDL('toolbar', TB.map(x => x[0]))}>✅ Show all</button>
-                  <button onClick={() => setDL('toolbar', [...TB_DEFAULT])}>↩️ Default</button>
-                </div>
-              </>
-            )}
+            {panel === 'bar' && (() => {
+              const cur = Array.isArray(draft.L.toolbar) ? draft.L.toolbar : TB_DEFAULT;
+              const put = (id, on) => setDL('toolbar', ALL_IDS.filter(x => (x === id ? on : cur.includes(x))));
+              const row = (id, ic, name) => (<label className="fld toggle" key={id}><span>{ic} {name}</span><input type="checkbox" checked={cur.includes(id)} onChange={e => put(id, e.target.checked)} /></label>);
+              return (
+                <>
+                  <p className="note"><b>Pick any features to pin on the top toolbar.</b> ✔ = shown as a button. Switches (on/off) become one-tap buttons; sliders, dropdowns and text boxes open a small window when tapped. The toolbar scrolls sideways if you pin many. ⚙️ Settings is always shown. Then press Save &amp; Apply below.</p>
+                  <p className="note dirty">{cur.filter(x => ALL_IDS.includes(x)).length} button(s) selected</p>
+                  <div className="seg">
+                    <button onClick={() => setDL('toolbar', [...TB_DEFAULT])}>↩️ Default</button>
+                    <button onClick={() => setDL('toolbar', [])}>⬜ Clear all</button>
+                  </div>
+                  <h3 className="sec">⭐ Quick actions</h3>
+                  {TB.map(([k, ic, name]) => row(k, ic, name))}
+                  {FGROUPS.map(([g, gl]) => (
+                    <div key={g}><h3 className="sec">{gl}</h3>
+                      {FITEMS.filter(x => FIELDS[g].includes(x.f)).map(x => row(x.id, ICONS[x.f.k] || '🔘', x.f.l))}
+                    </div>))}
+                </>
+              );
+            })()}
             {panel === 'game' && (dc ? FIELDS.game.map(f => <Field key={f.k} f={f} v={dc[f.k]} set={setDC} />) : <p>Loading…</p>)}
             {panel === 'game' && <p className="note">Press Save &amp; Apply below: the new game settings start with a fresh round.</p>}
             {panel === 'cats' && dc && (() => {

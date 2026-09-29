@@ -5,14 +5,14 @@ body{display:flex;justify-content:center;align-items:center;overflow:hidden;back
 /* Fixed 9:16 stage. Four grid zones; every zone clips its own content, so nothing can spill into a neighbour. */
 .stage{position:relative;width:min(100vw,calc(100dvh*9/16));height:min(100dvh,calc(100vw*16/9));container-type:size;display:grid;overflow:hidden;
   color:var(--text);font-family:var(--ff,system-ui);font-variant-numeric:tabular-nums;background:radial-gradient(circle at 12% 18%,#fff8 0 1.2cqw,#0000 1.3cqw),radial-gradient(circle at 85% 30%,#fff7 0 1.6cqw,#0000 1.7cqw),radial-gradient(circle at 20% 72%,#fff7 0 1cqw,#0000 1.1cqw),radial-gradient(circle at 90% 85%,#fff8 0 1.4cqw,#0000 1.5cqw),linear-gradient(160deg,var(--bg1),var(--bg2))}
-.stage::before{content:'✦ ♡ ✧ ☆ ✦ ♡ ✧';position:absolute;inset:auto 0 30% 0;text-align:center;font-size:4cqw;letter-spacing:5cqw;opacity:.25;pointer-events:none;animation:twinkle 4s ease-in-out infinite}
 .wait{margin:auto;font-size:6cqw}
 .z{min-width:0;min-height:0;overflow:hidden;padding:0 4cqw;display:flex;flex-direction:column}
 .hid{visibility:hidden}
 .calm *{animation:none!important;transition:none!important}
 /* HOST TOOLBAR - always visible, big touch targets */
 .bar{position:relative;z-index:30;height:12cqw;padding:0 2cqw;display:flex;align-items:center;justify-content:space-between;gap:1cqw;background:var(--panel);backdrop-filter:blur(6px);border-bottom:.6cqw dashed var(--te);border-radius:0 0 5cqw 5cqw}
-.bar button{flex:1 1 0;min-width:0;max-width:10.5cqw;aspect-ratio:1;padding:0;display:grid;place-items:center;border-radius:35%;border:.5cqw solid var(--te);background:linear-gradient(var(--t1),var(--t2));color:var(--tt);font-size:5cqw;line-height:1;cursor:pointer;box-shadow:0 .7cqw 0 var(--te);transition:transform .1s}
+.bar button{flex:1 1 0;min-width:0;max-width:8.6cqw;aspect-ratio:1;padding:0;display:grid;place-items:center;border-radius:35%;border:.5cqw solid var(--te);background:linear-gradient(var(--t1),var(--t2));color:var(--tt);font-size:4.4cqw;line-height:1;cursor:pointer;box-shadow:0 .7cqw 0 var(--te);transition:transform .1s}
+.bar .brand{flex:0 0 27cqw;min-width:0;max-width:27cqw;font-size:calc(5cqw*var(--fs));line-height:1.1;font-weight:900;letter-spacing:.3cqw;text-align:left;white-space:nowrap;overflow:hidden;padding-left:1cqw;text-shadow:0 .4cqw 0 #fff8}
 .bar button:active{transform:translateY(.6cqw);box-shadow:0 .1cqw 0 var(--te)}
 .bar button.hot{background:linear-gradient(var(--a1),var(--a2));color:var(--bt)}
 /* ZONE 1: title + category */
@@ -41,9 +41,12 @@ h1{flex:none;max-width:100%;font-size:calc(7.4cqw*var(--fs));line-height:1.15;fo
 .z3{padding-top:.5cqw;padding-bottom:1cqw;gap:1.5cqw;justify-content:flex-start}
 .av{flex:none;width:var(--s);height:var(--s);border-radius:50%;object-fit:cover;border:.5cqw solid var(--a1);background:var(--panel)}
 .av.ph{display:grid;place-items:center;font-size:calc(var(--s)*.5);font-weight:800;background:var(--a1);color:var(--bt)}
-.lb{flex:0 1 auto;min-height:0;display:flex;flex-direction:column;gap:1cqw;overflow:hidden}
-.lbrow{flex:0 0 9cqw;display:flex;align-items:center;gap:2cqw;padding:0 2.5cqw;border-radius:99px;background:var(--panel);border:.4cqw solid #fff8;box-shadow:0 .5cqw 0 #0001}
+.lb{flex:1 1 0;min-height:0;display:flex;flex-direction:column;justify-content:flex-start;gap:1cqw;overflow:hidden}
+.lbrow{flex:0 0 calc(var(--lh)*1cqw);display:flex;align-items:center;gap:2cqw;padding:0 2.5cqw 0 1.2cqw;border-radius:99px;background:var(--panel);border:.4cqw solid #fff8;box-shadow:0 .5cqw 0 #0001}
 .rk{flex:none;width:6cqw;text-align:center;font-size:4.2cqw;font-weight:800}
+.lbrow .rk{font-size:calc(var(--lh)*.5cqw)}
+.lbrow .who b{font-size:calc(var(--lh)*.44cqw*var(--fs))}
+.lbrow .pts{font-size:calc(var(--lh)*.5cqw*var(--fs))}
 .who{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.2}
 .who b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .who em{white-space:nowrap;overflow:hidden}
@@ -52,7 +55,7 @@ h1{flex:none;max-width:100%;font-size:calc(7.4cqw*var(--fs));line-height:1.15;fo
 .pts{flex:none;font-size:calc(4.4cqw*var(--fs));font-weight:900;color:var(--gold)}
 /* ZONE 4 */
 .z4{align-items:center;justify-content:flex-start;padding-top:1.5cqw;gap:1.5cqw}
-.z4 p{flex:0 1 auto;min-height:0;overflow:hidden;max-width:100%;font-size:calc(4.2cqw*var(--fs));line-height:1.25;font-weight:800;text-align:center}
+.z4 p{flex:none;overflow:hidden;white-space:nowrap;width:100%;font-size:calc(4.2cqw*var(--fs));line-height:1.25;font-weight:800;text-align:center}
 /* guess box (Test + Offline) */
 .play{flex:none;width:100%;display:flex;gap:1.5cqw;align-items:center;transition:transform .15s}
 .play input{flex:1;min-width:0;height:9cqw;padding:0 3.5cqw;font:700 calc(4cqw*var(--fs)) var(--ff);border-radius:99px;border:.6cqw solid var(--te);background:#fffe;color:#333;outline:none}
@@ -104,7 +107,8 @@ h1{flex:none;max-width:100%;font-size:calc(7.4cqw*var(--fs));line-height:1.15;fo
 
 /* GUESS WINDOW: floating card in its own grid row directly under the category (never overlaps the puzzle) */
 .zg{padding:1cqw 3cqw}
-.gwin{flex:1 1 0;min-height:0;display:flex;flex-direction:column;justify-content:flex-end;gap:1cqw;padding:1.2cqw 2cqw;overflow:hidden;border-radius:5cqw;background:var(--panel);border:.5cqw solid #fff9;box-shadow:0 1.2cqw 3cqw #0003;backdrop-filter:blur(6px);animation:float 4s ease-in-out infinite}
+.gwin{flex:1 1 0;min-height:0;display:flex;flex-direction:column;justify-content:center;padding:1.2cqw 2cqw;overflow:hidden;border-radius:5cqw;background:var(--panel);border:.5cqw solid #fff9;box-shadow:0 1.2cqw 3cqw #0003;backdrop-filter:blur(6px);animation:float 4s ease-in-out infinite;transition:opacity .25s}
+.gwin.off{opacity:0;visibility:hidden;transition:opacity .25s,visibility 0s .25s}   /* reserved space, invisible when nobody is guessing */
 .gmsg{flex:none;height:var(--gh);display:flex;align-items:center;gap:2cqw;animation:in-up .25s both;border-radius:99px}
 .gmsg .gtx{min-width:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:calc(var(--gh)*.46*var(--fs));font-weight:700}
 .gmsg b{color:var(--link)}

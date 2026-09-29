@@ -118,10 +118,11 @@ let botPlan = { solveAt: null, nextChat: 0 };
 let round = 0, current = null, phaseEnd = 0, paused = false, pausedAt = 0, revealed = new Set();
 let state = { phase: 'playing', round: 0, category: '', scrambled: '', answer: null, winner: null, winnerInfo: null, hint: '', total: cfg.roundSeconds, popupSecs: 0, lbSecs: 0 };
 
-const top = () => [...users.values()].sort((a, b) => b.score - a.score).slice(0, 10);
+const top = () => [...users.values()].sort((a, b) => b.score - a.score || (a.t || 0) - (b.t || 0)).slice(0, 10)
+  .map(u => ({ user: u.user, pic: u.pic, score: u.score, wins: u.wins }));   // answers are never sent with the leaderboard
 // everybody who gained points (used by the full-screen leaderboard that follows the winner window)
 const everyone = () => [...users.values()].filter(u => u.score > 0).sort((a, b) => b.score - a.score || (a.t || 0) - (b.t || 0))
-  .map(u => ({ user: u.user, pic: u.pic, score: u.score, wins: u.wins, words: u.words.slice(-1) }));
+  .map(u => ({ user: u.user, pic: u.pic, score: u.score, wins: u.wins }));
 const snap = () => ({ ...state, paused, peek: playMode === 'test' && current ? current.answer : '', remaining: Math.max(0, Math.ceil((phaseEnd - (paused ? pausedAt : Date.now())) / 1000)), leaderboard: top(),
   full: state.phase === 'reveal' && state.winner ? everyone() : [] });
 const pub = () => ({ cfg, cats: CATS, pinRequired: !!ADMIN_PIN, hasDefaults: Object.keys(userDef).length > 0,

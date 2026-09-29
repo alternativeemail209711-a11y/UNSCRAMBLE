@@ -12,17 +12,26 @@ const FONTS = {
   display: ['Bold display', "Impact,'Arial Black',sans-serif"], fun: ['Playful', "'Comic Sans MS','Chalkboard SE',cursive"]
 };
 const RADIUS = { rounded: '18%', square: '6%', circle: '50%' };
-const DEFAULTS = { theme: 'cotton', font: 'cute', fontScale: 100, tileShape: 'rounded', tileScale: 100, title: 'UNSCRAMBLE LIVE',
+const DEFAULTS = { theme: 'cotton', font: 'cute', fontScale: 100, tileShape: 'rounded', tileScale: 100, title: 'UNSCRAMBLE',
   footer: 'Type the correct word(s) in the chat to win!', reduceMotion: false, showTitle: true, showCategory: true, showTimer: true,
-  showHint: true, showPopup: true, showLb: true, showFeed: true, showFooter: true, feedLines: 3, lbRows: 3,
-  z1: 17, zg: 16, z2: 32, z4: 12, sound: false, volume: 60, playerName: 'Me' };
+  showHint: true, showPopup: true, showLb: true, showFeed: true, showFooter: true, feedSecs: 3, lbRows: 5,
+  z1: 9, zg: 9, z2: 40, z4: 13, sound: false, volume: 60, playerName: 'Me' };
 const MODES = {
   test: ['🧪', 'TEST', 'Test mode', 'Try games & upgrades. TikTok chat is OFF. Use the guess box, ✅ (solve), 💬 (fake chat) and 🤖 (auto-guessing bot).'],
   live: ['🔴', 'LIVE', 'Live mode', 'Go live on TikTok. Reads the TikTok chat. Guess box is hidden.'],
   offline: ['🎮', 'SOLO', 'Offline mode', 'Play by yourself. TikTok chat is OFF. Type your own guesses in the box.']
 };
 const TT_TEXT = { off: '', nouser: '⚠️ No TikTok username yet - open ⚙️ → 🔴 Live and type it in', connecting: '⏳ Connecting to TikTok…', connected: '✅ Connected to TikTok chat', retrying: '⏳ Not live yet - retrying every 15s' };
-const loadDefaults = () => { try { return { ...DEFAULTS, ...JSON.parse(localStorage.getItem('ul-defaults') || '{}') }; } catch { return DEFAULTS; } };
+// One-time upgrade: older saved layouts (3 leaderboard rows, old zone heights, 'UNSCRAMBLE LIVE') are replaced by the new layout.
+const LAYOUT_V = '3', OLD_KEYS = ['z1', 'zg', 'z2', 'z4', 'lbRows', 'feedLines'];
+const cleanOld = o => { const c = { ...o }; OLD_KEYS.forEach(k => delete c[k]); if (c.title === 'UNSCRAMBLE LIVE') delete c.title; return c; };
+const readSaved = key => {
+  let o = {}; try { o = JSON.parse(localStorage.getItem(key) || '{}'); } catch { o = {}; }
+  try { if (localStorage.getItem('ul-layout-v') !== LAYOUT_V) o = cleanOld(o); } catch { /* ignore */ }
+  return o;
+};
+const markMigrated = () => { try { if (localStorage.getItem('ul-layout-v') !== LAYOUT_V) { localStorage.setItem('ul-defaults', JSON.stringify(readSaved('ul-defaults'))); localStorage.setItem('ul-settings', JSON.stringify(readSaved('ul-settings'))); localStorage.setItem('ul-layout-v', LAYOUT_V); } } catch { /* ignore */ } };
+const loadDefaults = () => ({ ...DEFAULTS, ...readSaved('ul-defaults') });
 const tg = (k, l) => ({ k, l, t: 'toggle' });
 const rg = (k, l, min, max, step = 1, u = '') => ({ k, l, t: 'range', min, max, step, u });
 const FIELDS = {
@@ -37,9 +46,9 @@ const FIELDS = {
     tg('reduceMotion', 'Reduce animations')],
   layout: [
     tg('showTitle', 'Show title'), tg('showCategory', 'Show category banner'), tg('showTimer', 'Show timer'), tg('showHint', 'Show hint letters'),
-    tg('showFeed', 'Show guess window (profile pictures + guesses, under the category)'), tg('showPopup', 'Show winner window in the centre'), tg('showLb', 'Show mini leaderboard (bottom)'), tg('showFooter', 'Show footer'),
-    rg('feedLines', 'Guess window lines', 1, 6), rg('lbRows', 'Mini leaderboard rows', 1, 8),
-    rg('z1', 'Header height', 12, 30, 1, '%'), rg('zg', 'Guess window height', 8, 30, 1, '%'), rg('z2', 'Puzzle height', 20, 45, 1, '%'), rg('z4', 'Footer height', 8, 25, 1, '%'),
+    tg('showFeed', 'Show guess window (one guess at a time, under the category)'), tg('showPopup', 'Show winner window in the centre'), tg('showLb', 'Show mini leaderboard (bottom)'), tg('showFooter', 'Show footer'),
+    rg('feedSecs', 'Guess window stays for', 1, 10, 1, 's'), rg('lbRows', 'Mini leaderboard rows (top)', 1, 8),
+    rg('z1', 'Category height', 6, 20, 1, '%'), rg('zg', 'Guess window height', 6, 20, 1, '%'), rg('z2', 'Puzzle height', 20, 50, 1, '%'), rg('z4', 'Footer height', 8, 25, 1, '%'),
     tg('sound', 'Sound effects'), rg('volume', 'Volume', 0, 100, 5, '%')],
   game: [
     rg('roundSeconds', 'Round time', 20, 300, 5, 's'),
@@ -96,7 +105,7 @@ function FullBoard({ rows, secs, winner }) {
             <div className={'fbrow' + (p.user === winner ? ' new' : '')} key={p.user}>
               <span className="rk">{i < 3 ? MEDALS[i] : i + 1}</span>
               <Avatar pic={p.pic} name={p.user} size="calc(var(--rh)*1cqw)" />
-              <div className="who"><b>@{p.user}</b>{rh >= 8 && p.words.length > 0 && <em>{p.words[0]}</em>}</div>
+              <div className="who"><b>@{p.user}</b></div>
               <span className="pts">{p.score}</span>
             </div>
           ))}
@@ -158,7 +167,7 @@ function Field({ f, v, set }) {
 }
 
 export default function App() {
-  const [L, setL] = useState(() => { try { return { ...loadDefaults(), ...JSON.parse(localStorage.getItem('ul-settings') || '{}') }; } catch { return loadDefaults(); } });
+  const [L, setL] = useState(() => { const v = { ...loadDefaults(), ...readSaved('ul-settings') }; markMigrated(); return v; });
   const [draft, setDraft] = useState(null), [toast, setToast] = useState(''), [hasDef, setHasDef] = useState(false);   // draft = what the settings panel edits until Save & Apply
   const setLocal = (k, v) => { setL(o => ({ ...o, [k]: v })); setDraft(d => (d ? { ...d, L: { ...d.L, [k]: v } } : d)); };   // toolbar quick actions (theme, sound)
   const setDL = (k, v) => setDraft(d => ({ ...d, L: { ...d.L, [k]: v } }));
@@ -166,7 +175,8 @@ export default function App() {
   useEffect(() => { try { localStorage.setItem('ul-settings', JSON.stringify(L)); } catch { /* ignore */ } }, [L]);
 
   const [s, setS] = useState(null), [cfg, setCfg] = useState(null), [cats, setCats] = useState([]), [pinReq, setPinReq] = useState(false);
-  const [feed, setFeed] = useState([]), [left, setLeft] = useState(0);
+  const [gw, setGw] = useState(null), [left, setLeft] = useState(0);   // gw = the ONE guess card currently floating (or null)
+  const gwT = useRef({ shownAt: 0, hide: 0, swap: 0, secs: 3 });
   const [menu, setMenu] = useState(false), [mmenu, setMmenu] = useState(false), [panel, setPanel] = useState(null);
   const [pm, setPm] = useState('test'), [tt, setTt] = useState({ status: 'off', user: '' }), [fb, setFb] = useState('');
   const [ttUser, setTtUser] = useState(''), [ttKey, setTtKey] = useState(''), [ttMsg, setTtMsg] = useState('');
@@ -177,13 +187,24 @@ export default function App() {
   useEffect(() => {
     socket.on('state', st => { setS(st); deadline.current = Date.now() + st.remaining * 1000; setLeft(st.remaining); });
     socket.on('settings', x => { setCfg(x.cfg); setCats(x.cats); setPinReq(x.pinRequired); setHasDef(!!x.hasDefaults); setPm(x.playMode || 'test'); setTt(x.tt || { status: 'off', user: '' }); });
-    socket.on('feedClear', () => setFeed([]));
-    socket.on('feed', items => setFeed(f => [...f, ...items].slice(-30)));
+    const g = gwT.current, MIN_MS = 1200;   // a guess card is shown at least 1.2s before the next one may replace it
+    const show = m => {
+      g.shownAt = Date.now(); setGw(m);
+      clearTimeout(g.hide); g.hide = setTimeout(() => setGw(null), g.secs * 1000);
+    };
+    socket.on('feedClear', () => { clearTimeout(g.hide); clearTimeout(g.swap); setGw(null); });
+    socket.on('feed', items => {
+      const m = items[items.length - 1]; if (!m) return;   // busy chat: only the newest guess is shown, never a pile
+      const wait = MIN_MS - (Date.now() - g.shownAt);
+      clearTimeout(g.swap);
+      if (wait <= 0) show(m); else g.swap = setTimeout(() => show(m), wait);
+    });
     const iv = setInterval(() => { if (!paused.current) setLeft(Math.max(0, Math.ceil((deadline.current - Date.now()) / 1000))); }, 250);
-    return () => { clearInterval(iv); socket.off('state'); socket.off('settings'); socket.off('feed'); socket.off('feedClear'); };
+    return () => { clearInterval(iv); clearTimeout(g.hide); clearTimeout(g.swap); socket.off('state'); socket.off('settings'); socket.off('feed'); socket.off('feedClear'); };
   }, []);
   const paused = useRef(false);
   paused.current = !!s?.paused;
+  gwT.current.secs = L.feedSecs || 3;
   useEffect(() => { setTtUser(tt.user || ''); }, [tt.user]);
 
   useEffect(() => { if (s?.phase === 'reveal' && s.winnerInfo && L.sound) beep(L.volume, [523, 659, 784, 1047]); }, [s?.phase, s?.round]); // eslint-disable-line
@@ -255,10 +276,11 @@ export default function App() {
   // grid zones (% of the space under the toolbar): header | guess window | puzzle | mini leaderboard | footer
   const z1 = L.z1, z4 = L.z4, zg = L.showFeed ? L.zg : 0, z2 = Math.min(L.z2, 86 - z1 - zg - z4), z3 = 100 - z1 - zg - z2 - z4;
   const CQ = 1.6578;   // stage height under the toolbar in cqw per 1%
-  const gwH = zg * CQ - 2, nLines = Math.max(1, Math.min(L.feedLines, Math.floor((gwH - 2.4 + 1) / 7))), gh = Math.min(11, Math.max(4, (gwH - 2.4 - (nLines - 1)) / nLines));
-  const maxRows = Math.max(1, Math.floor((z3 * CQ - 3) / 10));
-  const nRows = Math.min(L.lbRows, maxRows);
-  const style = { ...theme.v, '--fs': L.fontScale / 100, '--ff': FONTS[L.font][1], '--tr': RADIUS[L.tileShape], gridTemplateRows: `auto minmax(0,${z1}fr) minmax(0,${zg}fr) minmax(0,${z2}fr) minmax(0,${z3}fr) minmax(0,${z4}fr)` };
+  const gwH = zg * CQ - 2, gh = Math.min(11, Math.max(4, gwH - 2.4));   // guess window = exactly ONE line
+  // Mini leaderboard: row height is calculated from the room the zone really has, so rows shrink to fit and can never spill into the footer.
+  const availLb = z3 * CQ - 2, nRows = Math.max(1, Math.min(L.lbRows, Math.floor(availLb / 5.5)));
+  const lh = Math.min(9, availLb / nRows) - 1;
+  const style = { ...theme.v, '--fs': L.fontScale / 100, '--ff': FONTS[L.font][1], '--tr': RADIUS[L.tileShape], '--lh': lh, gridTemplateRows: `auto minmax(0,${z1}fr) minmax(0,${zg}fr) minmax(0,${z2}fr) minmax(0,${z3}fr) minmax(0,${z4}fr)` };
   const hid = on => (on ? '' : ' hid');
   const rows = s.leaderboard.slice(0, nRows);   // only real winners - no empty placeholder rows
   const won = reveal && s.winnerInfo;
@@ -285,34 +307,31 @@ export default function App() {
 
       {/* ALWAYS-VISIBLE HOST TOOLBAR */}
       <nav className="bar">
+        <FitText className={'brand' + hid(L.showTitle)} dep={L.title + L.fontScale + L.font}>{L.title}</FitText>
         <button className={'mode m-' + pm} onClick={() => { setMmenu(m => !m); setMenu(false); }} title="Mode: Test / Live / Offline">{MODES[pm][0]}<small>{MODES[pm][1]}</small></button>
         <button onClick={() => { setMenu(m => !m); setMmenu(false); }} title="Theme">{theme.icon}</button>
         <button className={s.paused ? 'hot' : ''} onClick={() => admin('pause')} title={s.paused ? 'Resume' : 'Pause'}>{s.paused ? '▶️' : '⏸️'}</button>
         <button onClick={() => admin('skip')} title="Skip / next round">⏭️</button>
-        <button className={cfg?.mode === 'specific' ? 'hot' : ''} onClick={() => (panel === 'cats' ? closePanel() : openPanel('cats'))} title="Categories">🗂️</button>
         <button onClick={() => admin('hint')} title="Give a hint now">💡</button>
-        <button className={cfg && !cfg.showAnswerWin ? 'hot' : ''} onClick={toggleAnswer} title={cfg?.showAnswerWin ? 'Correct answer is shown when guessed (tap to hide)' : 'Correct answer is hidden when guessed (tap to show)'}>{cfg && !cfg.showAnswerWin ? '🙈' : '👁️'}</button>
         <button onClick={() => admin('time')} title="Add 15 seconds">⏰</button>
-        <button className={L.sound ? 'hot' : ''} onClick={() => setLocal('sound', !L.sound)} title="Sound on/off">{L.sound ? '🔔' : '🔕'}</button>
         <button onClick={fullscreen} title="Full screen">⛶</button>
         <button className={panel ? 'hot' : ''} onClick={() => (panel ? closePanel() : openPanel('look'))} title="Settings">⚙️</button>
       </nav>
 
       {/* ZONE 1 - header + category */}
       <header className="z z1">
-        <h1 className={hid(L.showTitle)}>{L.title}</h1>
         <CatBanner text={s.category} on={L.showCategory} dep={L.fontScale + L.font} />
       </header>
 
       {/* GUESS WINDOW - its own grid row directly under the category, so it can never cover the puzzle letters */}
       <section className="z zg" style={{ '--gh': gh + 'cqw' }}>
-        <div className={'gwin' + hid(L.showFeed && feed.length > 0)}>
-          {feed.slice(-nLines).map(m => (
-            <div key={m.id} className={'gmsg' + (m.ok ? ' ok' : '')}>
-              <Avatar pic={m.pic} name={m.user} size="var(--gh)" />
-              <span className="gtx"><b>@{m.user}</b> {m.text}</span>
+        <div className={'gwin' + (L.showFeed && gw ? '' : ' off')}>
+          {gw && (
+            <div key={gw.id} className={'gmsg' + (gw.ok ? ' ok' : '')}>
+              <Avatar pic={gw.pic} name={gw.user} size="var(--gh)" />
+              <span className="gtx"><b>@{gw.user}</b> {gw.text}</span>
             </div>
-          ))}
+          )}
         </div>
       </section>
 
@@ -334,8 +353,8 @@ export default function App() {
           {rows.map((p, i) => (
             <div className="lbrow" key={p.user}>
               <span className="rk">{i < 3 ? MEDALS[i] : i + 1}</span>
-              <Avatar pic={p.pic} name={p.user} size="7cqw" />
-              <div className="who"><b>@{p.user}</b><FitText as="em" dep={p.words.join()}>{p.words.slice(-3).join(' · ')}</FitText></div>
+              <Avatar pic={p.pic} name={p.user} size="calc(var(--lh)*.82cqw)" />
+              <div className="who"><b>@{p.user}</b></div>
               <span className="pts">{p.score}</span>
             </div>
           ))}
@@ -344,7 +363,7 @@ export default function App() {
 
       {/* ZONE 4 - footer */}
       <footer className="z z4">
-        {pm !== 'offline' && <p className={hid(L.showFooter)}>{L.footer}</p>}
+        {pm !== 'offline' && <FitText as="p" className={hid(L.showFooter).trim()} dep={L.footer + L.fontScale + L.font}>{L.footer}</FitText>}
         {pm !== 'live' && (
           <form className={'play' + (fb ? ' ' + fb : '')} onSubmit={sendGuess}>
             <input ref={gref} name="g" autoComplete="off" autoCapitalize="none" placeholder={pm === 'offline' ? '✍️ Type your guess…' : '🧪 Type a test guess…'} />

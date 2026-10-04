@@ -74,7 +74,7 @@ FL = "Strawberry,Chocolate,Vanilla,Mango,Banana,Blueberry,Coconut,Lemon,Orange,P
 add('SWEETS AND DESSERTS', combo(FL, "Cake,Cupcake,Ice Cream,Cheesecake,Pudding,Muffin,Donut,Cookie,Brownie,Milkshake,Smoothie,Sorbet,Tart,Pie,Macaron,Jelly,Popsicle,Lollipop,Fudge,Truffle,Mousse,Crepe,Waffle,Pancake,Custard,Parfait,Sundae,Gelato,Cookie Dough,Candy", '{} {}'))
 add('SWEETS AND DESSERTS', S("Apple Pie,Banana Split,Tiramisu,Baklava,Churros,Cendol,Kuih Lapis,Onde Onde,Pulut Hitam,Bubur Cha Cha,Ais Kacang,Halwa,Gulab Jamun,Mochi,Dorayaki,Pavlova,Creme Brulee,Eclair,Profiterole,Cotton Candy,Marshmallow,Gingerbread,Jelly Beans,Gummy Bears,Rock Candy,Candy Cane,Bubblegum,Nougat,Marzipan,Turkish Delight,Panna Cotta,Cannoli,Souffle,Trifle,Cobbler,Strudel,Danish Pastry,Croissant,Cinnamon Roll,Doughnut,Beignet,Zabaglione,Flan,Kulfi,Rasmalai,Jalebi,Tang Yuan,Egg Tart,Mooncake,Dango,Taiyaki"))
 MAIN = "Rice,Noodles,Fried Rice,Burger,Pizza,Pasta,Sandwich,Salad,Soup,Curry,Stew,Sushi,Tacos,Burrito,Omelette,Sausage,Wings,Steak,Dumplings,Wrap,Pie,Skewers,Porridge,Stir Fry"
-add('FOOD AND DRINK', combo("Chicken,Beef,Lamb,Pork,Fish,Prawn,Squid,Crab,Egg,Cheese,Mushroom,Vegetable,Tofu,Spicy,Garlic,Butter,Teriyaki,Sambal,Satay,Tomato,Lemon Herb,Honey Mustard,Black Pepper,BBQ,Coconut,Thai,Korean,Japanese,Italian,Mexican,Indian,Malay,Vietnamese,Greek", MAIN))
+add('FOOD AND DRINK', combo("Chicken,Beef,Lamb,Pork,Fish,Prawn,Squid,Crab,Egg,Cheese,Mushroom,Vegetable,Tofu,Spicy,Garlic,Butter,Teriyaki,Sambal,Satay,Tomato,Lemon Herb,Honey Mustard,Black Pepper,BBQ,Coconut,Thai,Korean,Japanese,Italian,Mexican,Indian,Vietnamese,Greek", MAIN))
 add('FOOD AND DRINK', S("Nasi Lemak,Roti Canai,Satay,Laksa,Char Kuey Teow,Rendang,Mee Goreng,Nasi Goreng,Teh Tarik,Cendol,Rojak,Curry Mee,Bak Kut Teh,Hokkien Mee,Wantan Mee,Dim Sum,Peking Duck,Pad Thai,Tom Yum,Pho,Banh Mi,Kimchi,Bibimbap,Ramen,Tempura,Takoyaki,Paella,Lasagna,Risotto,Ratatouille,Goulash,Falafel,Hummus,Shawarma,Kebab,Biryani,Tandoori,Naan,Samosa,Guacamole,Nachos,Quesadilla,Fish and Chips,Hot Dog,Fried Chicken,Mac and Cheese,French Toast,Bagel,Pretzel,Popcorn,Peanut Butter,Maple Syrup,Green Tea,Bubble Tea,Iced Coffee,Hot Chocolate,Lemonade,Orange Juice,Coconut Water,Sugarcane Juice,Milk Tea,Espresso,Cappuccino,Latte,Mojito,Smoothie Bowl"))
 
 
@@ -99,6 +99,11 @@ for k, v in by.items():
     if k not in small: DB['WORDS STARTING WITH ' + k] = {x.upper(): 1 for x in v}
 if small: DB['WORDS STARTING WITH ' + ', '.join(small[:-1]) + ' OR ' + small[-1]] = {x.upper(): 1 for k in small for x in by[k]}
 print({k: len(v) for k, v in DB.items()})
+# WORD SHUFFLE 10: the game is open to viewers worldwide - drop answers that only make sense for Malaysia (Malaysia, Kuala Lumpur and Malay as a language stay as ordinary world-list entries)
+MY_ONLY = {'NASI LEMAK', 'ROTI CANAI', 'TEH TARIK', 'CENDOL', 'PERODUA', 'PROTON BRAND', 'PENANG HILL', 'KEBAYA'}
+for _c, _v in DB.items():
+    if _c in ('FAMOUS BRANDS',): _v.pop('PROTON', None)
+    for _a in [a for a in _v if a in MY_ONLY or re.match(r'^MALAY ', a)]: _v.pop(_a, None)
 OUT = {k: sorted(v) for k, v in DB.items()}
 tot = sum(len(v) for v in OUT.values()); print('categories', len(OUT), 'puzzles', tot)
 os.makedirs('data', exist_ok=True)

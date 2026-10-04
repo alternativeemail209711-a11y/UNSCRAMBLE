@@ -285,24 +285,27 @@ function Confetti({ l, loop }) {
   );
 }
 
-// MAX-TWO-ROWS RULE: a puzzle is shown in ONE row when it fits nicely; a long or multi-word answer is split between words into at most TWO rows
-// (never more). Words are never broken. Tile size is calculated from the row width, so everything always fits.
-const LETTER_GAP = 0.08, WORD_GAP = 0.5, ROW_GAP = 0.35;
+// ROW RULE (strict):
+//  - ONE single word is ALWAYS shown on ONE single row, however long it is (the tiles just get smaller to fit the width).
+//  - Only a LONG answer made of 2 or 3 words (14+ letters in total) may use TWO rows, split between words, never mid-word.
+//  - Never 3 rows. Words are never broken. Tile size is calculated from the row width, so everything always fits.
+const LETTER_GAP = 0.08, WORD_GAP = 0.5, ROW_GAP = 0.35, TWO_ROW_MIN = 14;
+const lettersIn = words => words.reduce((a, w) => a + [...w].length, 0);
+const wantTwo = words => words.length >= 2 && lettersIn(words) >= TWO_ROW_MIN;   // true only for a long multi-word answer
 const unitsOf = (lens, gap) => { const L = lens.reduce((a, b) => a + b, 0), n = lens.length; return L + gap * (L - n) + WORD_GAP * Math.max(0, n - 1); };
 function layoutRows(lens, W, H, gap = LETTER_GAP) {
-  const t1 = Math.min((W * 0.96) / unitsOf(lens, gap), H * 0.78, 90);
-  let best = { rows: [lens.map((_, i) => i)], t: Math.max(4, Math.floor(t1)) };
-  if (lens.length > 1 && t1 < W * 0.1) {   // only when one row would make the tiles small
-    let split = 1, m = Infinity;   // best split point = the one that makes the wider row as narrow as possible
-    for (let k = 1; k < lens.length; k++) { const w = Math.max(unitsOf(lens.slice(0, k), gap), unitsOf(lens.slice(k), gap)); if (w < m) { m = w; split = k; } }
-    const t2 = Math.min((W * 0.96) / m, H / (2 + ROW_GAP + 0.3), 90);
-    if (t2 > t1 * 1.1) best = { rows: [lens.slice(0, split).map((_, i) => i), lens.slice(split).map((_, i) => i + split)], t: Math.max(4, Math.floor(t2)) };
-  }
-  return best;
+  const t1 = Math.min((W * 0.98) / unitsOf(lens, gap), H * 0.78, 90);
+  const one = { rows: [lens.map((_, i) => i)], t: Math.max(3, Math.floor(t1)) };
+  if (lens.length < 2 || lens.reduce((a, b) => a + b, 0) < TWO_ROW_MIN) return one;   // single word / short answer: one row, always
+  let split = 1, m = Infinity;   // best split point = the one that makes the wider row as narrow as possible
+  for (let k = 1; k < lens.length; k++) { const w = Math.max(unitsOf(lens.slice(0, k), gap), unitsOf(lens.slice(k), gap)); if (w < m) { m = w; split = k; } }
+  const t2 = Math.min((W * 0.98) / m, H / (2 + ROW_GAP + 0.3), 90);
+  if (t2 > t1 * 1.1) return { rows: [lens.slice(0, split).map((_, i) => i), lens.slice(split).map((_, i) => i + split)], t: Math.max(3, Math.floor(t2)) };
+  return one;
 }
-// two-line text helper (hint line / winner word): one line when short, otherwise split between words into two balanced lines
+// two-line text helper (hint line / winner word): one line unless it is a long multi-word answer, then two balanced lines
 function twoLines(words) {
-  if (words.length < 2) return [words.join(' ')];
+  if (!wantTwo(words)) return [words.join(' ')];
   let split = 1, m = Infinity;
   for (let k = 1; k < words.length; k++) { const a = words.slice(0, k).join(' ').length, b = words.slice(k).join(' ').length, w = Math.max(a, b); if (w < m) { m = w; split = k; } }
   return [words.slice(0, split).join(' '), words.slice(split).join(' ')];
@@ -725,7 +728,7 @@ export default function App() {
         <Board text={reveal && s.answer ? s.answer : s.scrambled} solved={reveal && (!!s.answer || !!s.winner)} scale={L.tileScale} gap={(L.tGap ?? 8) / 100} />
         {(() => {
           const fmt = t => [...t].map(c => (c === ' ' ? '\u00a0' : c === '_' ? (L.hintChar || '•') : c)).join(L.hintSpaced === false ? '' : ' ');
-          const ws = (s.hint || '').split(' ').filter(Boolean), two = ws.length > 1 && s.hint.length > 14;   // long multi-word hint -> max 2 lines
+          const ws = (s.hint || '').split(' ').filter(Boolean), two = wantTwo(ws);   // only a long multi-word hint uses 2 lines; one word is always 1 line
           const ln = two ? twoLines(ws) : [s.hint || ''], dep = s.hint + L.hintChar + L.hintSpaced + L.hintSize + ln.length;
           return <div className={'hintbox' + (two ? ' two' : '') + hid(L.showHint && !reveal && !!s.hint)}>
             {ln.map((t, i) => <FitText key={i} className="hint" dep={dep + i}>{t ? fmt(t) : '\u00a0'}</FitText>)}

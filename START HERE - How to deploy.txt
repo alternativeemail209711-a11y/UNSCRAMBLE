@@ -1,10 +1,22 @@
-WORD SHUFFLE 9  -  KNITTING EDITION  🧶
-=======================================
+WORD SHUFFLE 10  -  KNITTING EDITION  🧶
+========================================
 
-WHAT IS NEW IN THIS VERSION
----------------------------
+WHAT IS NEW IN VERSION 10
+-------------------------
+ - OPEN TO EVERYONE: the Malaysia-only categories are gone and replaced by
+   ASIAN FOOD and ASIA. No category is specific to one country any more.
+ - STRICT ONE ROW: one single word is ALWAYS on one single row, however long.
+   Only a long answer of 2 or 3 words may use two rows (never more).
+ - EVERY category has plenty of answers (lowest: 89 playable answers; the game
+   also ignores any built-in category with fewer than 50).
+ - Nothing to configure. If you saved a custom category selection earlier, open
+   the Categories picker and tick ASIAN FOOD and ASIA (and any other new ones).
+ - To update: upload this whole folder over your old files (same steps as below).
+
+WHAT WAS NEW IN VERSION 9 (still included)
+------------------------------------------
 0) NEW IN 9: 62 more categories (Tools & Equipment, Health & Medicine, Festivals &
-   Celebrations, Kitchen, Furniture, Insects, Gems, Elements, Malaysian Food ...)
+   Celebrations, Kitchen, Furniture, Insects, Gems, Elements ...)
    and long / multi-word puzzles now use AT MOST 2 ROWS (never more).
    Nothing to configure - the new categories appear in the Categories picker.
    If you saved a custom category selection earlier, tick the new ones there.

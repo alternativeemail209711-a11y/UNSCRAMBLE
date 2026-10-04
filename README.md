@@ -1,6 +1,13 @@
+# WORD SHUFFLE 10 - what is new
+- **Open to everyone, worldwide.** The two Malaysia-only categories (ASIAN FOOD, ASIA) are gone. They are replaced by **ASIAN FOOD** and **ASIA**, which work for any viewer. Answers that only make sense for Malaysia were removed from the other categories too; Malaysia / Kuala Lumpur / Malay still appear as ordinary entries in worldwide lists (countries, capitals, languages, currencies).
+- **Strict one-row rule.** One single word is **always one single row**, however long it is (the letter tiles just get smaller to fit the width). Only a long answer made of **2 or 3 words** (14+ letters in total) may use **two rows**, split between words. Never 3 rows, words are never broken. This applies to the scrambled letters, the revealed answer, the hint line and the winner word. Short multi-word answers such as ICE CREAM stay on one row.
+- **Answers are one word, or 2-3 words at most** (the server skips anything longer).
+- **Every category has plenty of answers.** All 112 categories hold at least 89 playable answers (5-20 letters, 1-3 words) - the lowest is KNITTING & YARN with 89. The server also refuses to use any built-in category with fewer than 50 answers (your own "My Puzzles" categories are exempt).
+- ~2,300 new answers across about 55 categories, plus 2 new categories (ASIAN FOOD, ASIA). `python3 tools/add_categories.py` prints a warning if a category ever drops below 50 playable answers.
+
 # WORD SHUFFLE 9 - what is new
-- **62 extra categories (~5,000 answers)** in `data/puzzles.extra.json`, e.g. TOOLS AND EQUIPMENT, HEALTH AND MEDICINE, FESTIVALS AND CELEBRATIONS, KITCHEN AND COOKWARE, FURNITURE AND HOME, GARDENING AND FARMING, INSECTS AND BUGS, REPTILES AND AMPHIBIANS, TREES AND PLANTS, GEMS AND MINERALS, CHEMICAL ELEMENTS, WEATHER AND NATURE, EMOTIONS AND FEELINGS, HOBBIES AND CRAFTS, SPORTS EQUIPMENT, COMPUTERS AND TECHNOLOGY, SOCIAL MEDIA AND INTERNET, CARS AND VEHICLES, AIRPORT AND TRAVEL, MALAYSIAN FOOD, MALAYSIA AND ASIA, FAIRY TALES AND STORIES, FAMOUS INVENTIONS, MONEY AND BANKING and many more. Tick/untick them in 🗂 Categories.
-- **Max 2 rows** for long / multi-word puzzles (see "Max-two-rows rule" below).
+- **62 extra categories (~5,000 answers)** in `data/puzzles.extra.json`, e.g. TOOLS AND EQUIPMENT, HEALTH AND MEDICINE, FESTIVALS AND CELEBRATIONS, KITCHEN AND COOKWARE, FURNITURE AND HOME, GARDENING AND FARMING, INSECTS AND BUGS, REPTILES AND AMPHIBIANS, TREES AND PLANTS, GEMS AND MINERALS, CHEMICAL ELEMENTS, WEATHER AND NATURE, EMOTIONS AND FEELINGS, HOBBIES AND CRAFTS, SPORTS EQUIPMENT, COMPUTERS AND TECHNOLOGY, SOCIAL MEDIA AND INTERNET, CARS AND VEHICLES, AIRPORT AND TRAVEL, ASIAN FOOD, ASIA, FAIRY TALES AND STORIES, FAMOUS INVENTIONS, MONEY AND BANKING and many more. Tick/untick them in 🗂 Categories.
+- **Max 2 rows** for long multi-word puzzles (see "Row rule" below).
 - Add your own: edit a file in `tools/new_categories/` and run `python3 tools/add_categories.py`, or edit `data/puzzles.extra.json` directly (letters and spaces only).
 
 # WORD SHUFFLE 8 - what is new
@@ -106,8 +113,8 @@ Change anything in Look / Layout / Game / Categories - nothing is applied until 
 - **⭐ Save & Apply as Default** - same, and also stores them as your defaults (look on this device, game + categories on the server in `data/defaults.json`).
 - ✕ closes the panel and discards unsaved changes. Admin tab: reset to *my saved defaults* or to *factory settings*.
 
-## Max-two-rows rule
-Puzzles are shown in ONE row when they fit nicely. A long or multi-word answer is split **between words** into **at most 2 rows** - never 3 or more, and words are never broken. This applies to the scrambled letters, the revealed answer, the hint line and the winner word. Tiles are sized from the available width/height, so everything always fits. "Max letters" now goes up to 30 (default still 20).
+## Row rule (updated in 10)
+A **single word is always shown on ONE row**. Only a long answer of **2 or 3 words** (14+ letters in total) is split **between words** into **two rows** - never 3 or more, and words are never broken. This applies to the scrambled letters, the revealed answer, the hint line and the winner word. Tiles are sized from the available width/height, so everything always fits. "Max letters" goes up to 30 (default 20).
 
 ## Categories
 🗂 opens the category picker: **Random mix** (all ticked categories) or **Specific** (only the ones you pick; pick one to lock it).

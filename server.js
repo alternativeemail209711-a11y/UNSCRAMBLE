@@ -19,7 +19,14 @@ if (fs.existsSync(extraFile)) {
 }
 // 'English words' style catch-all categories are intentionally excluded (too wide / vague)
 const BANNED = /english|common words|random words|dictionary/i;
-let CATS = Object.keys(DB).filter(c => DB[c].length && !BANNED.test(c));
+// every built-in category must hold at least MIN_ANSWERS answers (the host's own "My Puzzles" categories are exempt); if that would leave nothing, the rule is skipped
+const MIN_ANSWERS = 50, MAX_WORDS = 3;   // MAX_WORDS: an answer is one word, or 2-3 words at most
+let custom = {};
+const calcCats = () => {
+  const ok = Object.keys(DB).filter(c => DB[c].length && !BANNED.test(c)), big = ok.filter(c => DB[c].length >= MIN_ANSWERS || custom[c]);
+  return big.length ? big : ok;
+};
+let CATS = calcCats();
 console.log(`Loaded ${CATS.length} categories from ${path.basename(dbFile)}`);
 
 // ---------- host-adjustable game settings ----------
@@ -46,12 +53,12 @@ const readJSON = f => { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } c
 const persist = (f, o) => { try { fs.mkdirSync(DATA_DIR, { recursive: true }); fs.writeFileSync(f, JSON.stringify(o)); } catch (e) { console.warn('Could not save ' + f + ': ' + e.message); } };
 let userDef = readJSON(DFILE);
 // host's own categories typed on screen (settings -> My Puzzles): data/custom.json, merged into the database live
-const CUFILE = path.join(DATA_DIR, 'custom.json'); let custom = readJSON(CUFILE);
+const CUFILE = path.join(DATA_DIR, 'custom.json'); custom = readJSON(CUFILE);
 const BASE = Object.fromEntries(Object.entries(DB).map(([k, v]) => [k, v]));
 function applyCustom() {
   for (const k of Object.keys(DB)) if (!BASE[k]) delete DB[k];
   for (const [k, v] of Object.entries(custom)) DB[k] = [...new Set([...(BASE[k] || []), ...v])];
-  CATS = Object.keys(DB).filter(c => DB[c].length && !BANNED.test(c));
+  CATS = calcCats();
 }
 applyCustom();
 let cfg = { ...DEF, ...userDef, ...readJSON(SFILE) };
@@ -122,11 +129,12 @@ function scramble(answer) {
 
 const used = {}; let lastCat = null, catStreak = 0;
 function pick() {
-  const okAns = a => { const n = a.replace(/ /g, '').length; return n >= cfg.minLetters && n <= cfg.maxLetters && (cfg.allowMulti || !a.includes(' ')); };
+  const okAns = a => { const n = a.replace(/ /g, '').length; return n >= cfg.minLetters && n <= cfg.maxLetters && (cfg.allowMulti || !a.includes(' ')) && a.split(' ').length <= MAX_WORDS; };
   const chosen = cfg.mode === 'specific' ? CATS.filter(c => cfg.picked.includes(c)) : [];
   const base = chosen.length ? chosen : CATS.filter(c => !cfg.disabled.includes(c));   // specific = only picked; random = every enabled category
   let pools = base.map(c => [c, DB[c].filter(okAns)]).filter(([, l]) => l.length);
-  if (!pools.length) pools = (base.length ? base : CATS).map(c => [c, DB[c]]);       // letter filters too strict -> ignore them
+  if (!pools.length) pools = (base.length ? base : CATS).map(c => [c, DB[c].filter(a => a.split(' ').length <= MAX_WORDS)]).filter(([, l]) => l.length);       // letter filters too strict -> ignore them (the 3-word limit stays)
+  if (!pools.length) pools = CATS.map(c => [c, DB[c]]);
   const isW = c => c.startsWith('WORDS STARTING WITH'), wp = pools.filter(([c]) => isW(c)), tp = pools.filter(([c]) => !isW(c));
   const keep = lastCat && catStreak < cfg.catEvery ? pools.find(([c]) => c === lastCat) : null;   // "keep the same category for N rounds"
   let cat, list;

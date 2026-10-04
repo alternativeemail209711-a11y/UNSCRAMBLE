@@ -117,7 +117,7 @@ const FIELDS = {
     tg('showAnswerWin', '✅ Show the answer when a viewer guesses it correctly'), rg('popupSecs', 'Winner window duration (centre)', 2, 30, 1, 's'),
     tg('showLbOverlay', 'Show full leaderboard after the winner window'), rg('lbSecs', 'Full leaderboard duration', 3, 60, 1, 's'),
     tg('showAnswer', '⌛ Show the answer when time runs out (nobody solved it)'), rg('revealSeconds', 'Reveal time when nobody solved it', 3, 30, 1, 's'),
-    rg('minLetters', 'Min letters', 3, 25), rg('maxLetters', 'Max letters', 3, 25), tg('allowMulti', 'Allow multi-word puzzles'),
+    rg('minLetters', 'Min letters', 3, 30), rg('maxLetters', 'Max letters', 3, 30), tg('allowMulti', 'Allow multi-word puzzles'),
     tg('spaceless', 'Accept answer without spaces'), tg('hints', 'Auto hints (reveal letters)'), rg('hintStart', 'First hint at', 10, 90, 5, '% of round'),
     rg('hintEvery', 'Next hint every', 3, 60, 1, 's'), rg('maxHints', 'Max hints', 0, 10), rg('wordPercent', 'Word Power (dictionary) share of rounds in Random mix', 0, 100, 5, '%'),
     hd('h_g1', '🧩 Puzzle style'),
@@ -285,13 +285,27 @@ function Confetti({ l, loop }) {
   );
 }
 
-// STRICT ONE-ROW RULE: every letter of every word sits in ONE single row. The tile size is calculated from the row width
-// (letters + small gaps inside words + bigger gaps between words), so the row always fits - long answers simply get smaller tiles.
-const LETTER_GAP = 0.08, WORD_GAP = 0.5;
-function rowTile(lens, W, H, gap = LETTER_GAP) {
-  const L = lens.reduce((a, b) => a + b, 0), n = lens.length;
-  const units = L + gap * (L - n) + WORD_GAP * (n - 1);
-  return Math.max(4, Math.floor(Math.min((W * 0.96) / units, H * 0.78, 90)));
+// MAX-TWO-ROWS RULE: a puzzle is shown in ONE row when it fits nicely; a long or multi-word answer is split between words into at most TWO rows
+// (never more). Words are never broken. Tile size is calculated from the row width, so everything always fits.
+const LETTER_GAP = 0.08, WORD_GAP = 0.5, ROW_GAP = 0.35;
+const unitsOf = (lens, gap) => { const L = lens.reduce((a, b) => a + b, 0), n = lens.length; return L + gap * (L - n) + WORD_GAP * Math.max(0, n - 1); };
+function layoutRows(lens, W, H, gap = LETTER_GAP) {
+  const t1 = Math.min((W * 0.96) / unitsOf(lens, gap), H * 0.78, 90);
+  let best = { rows: [lens.map((_, i) => i)], t: Math.max(4, Math.floor(t1)) };
+  if (lens.length > 1 && t1 < W * 0.1) {   // only when one row would make the tiles small
+    let split = 1, m = Infinity;   // best split point = the one that makes the wider row as narrow as possible
+    for (let k = 1; k < lens.length; k++) { const w = Math.max(unitsOf(lens.slice(0, k), gap), unitsOf(lens.slice(k), gap)); if (w < m) { m = w; split = k; } }
+    const t2 = Math.min((W * 0.96) / m, H / (2 + ROW_GAP + 0.3), 90);
+    if (t2 > t1 * 1.1) best = { rows: [lens.slice(0, split).map((_, i) => i), lens.slice(split).map((_, i) => i + split)], t: Math.max(4, Math.floor(t2)) };
+  }
+  return best;
+}
+// two-line text helper (hint line / winner word): one line when short, otherwise split between words into two balanced lines
+function twoLines(words) {
+  if (words.length < 2) return [words.join(' ')];
+  let split = 1, m = Infinity;
+  for (let k = 1; k < words.length; k++) { const a = words.slice(0, k).join(' ').length, b = words.slice(k).join(' ').length, w = Math.max(a, b); if (w < m) { m = w; split = k; } }
+  return [words.slice(0, split).join(' '), words.slice(split).join(' ')];
 }
 
 // Exact TikTok profile picture, always a circle. Try the server proxy first, then the direct URL, then a letter bubble.
@@ -336,7 +350,7 @@ function WinnerCard({ w, l }) {
   for (let i = 0; i < R; i++) { const c = base + (i < extra ? 1 : 0); groups.push(items.slice(at, at + c)); at += c; }
   const part = (id, shared) => (id === 'av' ? <Avatar key={id} pic={w.pic} name={w.user} size={shared ? '15cqw' : '30cqw'} />
     : id === 'nm' ? <b key={id} className="pn">{AT(l)}{w.user}</b>
-      : id === 'wd' ? <FitText key={id} className="wd" dep={w.word}>{w.word || '🧶 Correct!'}</FitText>
+      : id === 'wd' ? <div key={id} className="wdbox">{twoLines((w.word || '🧶 Correct!').split(' ').filter(Boolean)).map((t, i) => <FitText key={i} className="wd" dep={w.word + i}>{t}</FitText>)}</div>
         : <div key={id} className="pt">+{w.pts}{l.wStreak !== false && w.streak > 1 ? ' 🔥×' + w.streak : ''}</div>);
   return (
     <div className="pop" style={{ width: 82 * l.wW / 100 + 'cqw', background: winBg(l, 'w', 'var(--bg1)') }}>
@@ -357,13 +371,18 @@ function Board({ text, solved, scale, gap }) {
     return () => ro.disconnect();
   }, []);
   const words = text.split(' ').filter(Boolean);
-  const t = Math.max(4, Math.floor(rowTile(words.map(w => w.length), box.w, box.h, gap) * scale / 100));   // scale is <= 100, so it can only shrink
+  const lay = layoutRows(words.map(w => w.length), box.w, box.h, gap);
+  const t = Math.max(4, Math.floor(lay.t * scale / 100));   // scale is <= 100, so it can only shrink
   return (
     <div className="board" ref={ref} style={{ '--t': t + 'px' }}>
       <div className="words" key={text}>
-        {words.map((w, i) => (
-          <div className="word" key={i}>
-            {[...w].map((c, j) => <span key={j} className={'tile' + (solved ? ' ok' : '')} style={{ animationDelay: (i * 3 + j) * 25 + 'ms' }}>{c}</span>)}
+        {lay.rows.map((row, r) => (
+          <div className="wrow" key={r}>
+            {row.map(i => (
+              <div className="word" key={i}>
+                {[...words[i]].map((c, j) => <span key={j} className={'tile' + (solved ? ' ok' : '')} style={{ animationDelay: (i * 3 + j) * 25 + 'ms' }}>{c}</span>)}
+              </div>
+            ))}
           </div>
         ))}
       </div>
@@ -704,7 +723,14 @@ export default function App() {
       {/* ZONE 2 - puzzle board */}
       <section className="z z2">
         <Board text={reveal && s.answer ? s.answer : s.scrambled} solved={reveal && (!!s.answer || !!s.winner)} scale={L.tileScale} gap={(L.tGap ?? 8) / 100} />
-        <FitText className={'hint' + hid(L.showHint && !reveal && !!s.hint)} dep={s.hint + L.hintChar + L.hintSpaced + L.hintSize}>{s.hint ? [...s.hint].map(c => (c === ' ' ? '\u00a0' : c === '_' ? (L.hintChar || '•') : c)).join(L.hintSpaced === false ? '' : ' ') : '\u00a0'}</FitText>
+        {(() => {
+          const fmt = t => [...t].map(c => (c === ' ' ? '\u00a0' : c === '_' ? (L.hintChar || '•') : c)).join(L.hintSpaced === false ? '' : ' ');
+          const ws = (s.hint || '').split(' ').filter(Boolean), two = ws.length > 1 && s.hint.length > 14;   // long multi-word hint -> max 2 lines
+          const ln = two ? twoLines(ws) : [s.hint || ''], dep = s.hint + L.hintChar + L.hintSpaced + L.hintSize + ln.length;
+          return <div className={'hintbox' + (two ? ' two' : '') + hid(L.showHint && !reveal && !!s.hint)}>
+            {ln.map((t, i) => <FitText key={i} className="hint" dep={dep + i}>{t ? fmt(t) : '\u00a0'}</FitText>)}
+          </div>;
+        })()}
         <div className={'strip' + hid(L.showTimer) + (warn ? ' warn' : '')}>
           {!reveal && L.timerStyle !== 'number' && <i className="bar-fill" style={{ width: (left / s.total) * 100 + '%', ...(L.timerBarClr && { background: L.timerBarClr, opacity: 0.7 }) }} />}
           <span className={reveal ? 'winner' : ''}>{stripText}</span>

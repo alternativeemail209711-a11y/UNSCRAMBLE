@@ -368,3 +368,11 @@ html.plainBg{background-image:linear-gradient(160deg,var(--bg1),var(--bg2));back
 /* settings tabs: ONE scrolling row (14 tabs would otherwise cover half of a phone screen) */
 .tabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin;padding-bottom:10px}
 .tabs button{flex:none;white-space:nowrap}
+
+/* ===== MAX TWO ROWS: long / multi-word puzzles use 2 rows (never more) ===== */
+.words{flex-direction:column;flex-wrap:nowrap;gap:calc(var(--t)*.35)}
+.wrow{flex:none;display:flex;flex-wrap:nowrap;justify-content:center;align-items:center;gap:calc(var(--t)*.5);max-width:100%}
+.hintbox{flex:none;width:100%;display:flex;flex-direction:column;justify-content:center}
+.hintbox.two .hint{height:4cqw;line-height:4cqw;font-size:calc(3.8cqw*var(--fs)*var(--hs,1))}
+.wdbox{display:flex;flex-direction:column;align-items:center;min-width:0;max-width:100%}
+.prow>.wdbox{flex:0 1 auto;min-width:0}

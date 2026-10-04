@@ -32,7 +32,7 @@ const DEF = { roundSeconds: +process.env.ROUND_SECONDS || 90, revealSeconds: 10,
   pointsPerWin: 1, speedBonusOn: false, speedBonusPct: 30, speedBonusPts: 1, streakBonus: 0, hintPenalty: false, guessCooldown: 0, blocklist: '',
   // --- puzzle style ---
   keepFirst: false, perWord: false, hintMode: 'random' };
-const RANGE = { roundSeconds: [20, 300], revealSeconds: [3, 30], popupSecs: [2, 30], lbSecs: [3, 60], minLetters: [3, 25], maxLetters: [3, 25], hintStart: [10, 90],
+const RANGE = { roundSeconds: [20, 300], revealSeconds: [3, 30], popupSecs: [2, 30], lbSecs: [3, 60], minLetters: [3, 30], maxLetters: [3, 30], hintStart: [10, 90],
   hintEvery: [3, 60], maxHints: [0, 10], botEvery: [1, 30], botSkill: [0, 100], wordPercent: [0, 100],
   breakSecs: [0, 60], stopAfterUnsolved: [0, 20], sessionRounds: [0, 500], finalLbSecs: [0, 120], catEvery: [1, 20], lbEvery: [1, 20], secsPerLetter: [0, 10],
   pointsPerWin: [1, 10], speedBonusPct: [10, 90], speedBonusPts: [1, 10], streakBonus: [0, 5], guessCooldown: [0, 30] };

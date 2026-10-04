@@ -1,8 +1,13 @@
-WORD SHUFFLE 8  -  KNITTING EDITION  🧶
+WORD SHUFFLE 9  -  KNITTING EDITION  🧶
 =======================================
 
 WHAT IS NEW IN THIS VERSION
 ---------------------------
+0) NEW IN 9: 62 more categories (Tools & Equipment, Health & Medicine, Festivals &
+   Celebrations, Kitchen, Furniture, Insects, Gems, Elements, Malaysian Food ...)
+   and long / multi-word puzzles now use AT MOST 2 ROWS (never more).
+   Nothing to configure - the new categories appear in the Categories picker.
+   If you saved a custom category selection earlier, tick the new ones there.
 1) AUTO NEXT ROUND  (settings ⚙️ -> ⏭ Next Round)
    - Automatic or manual next round (manual = big ▶ START NEXT ROUND button)
    - Extra break between rounds, extra time per letter

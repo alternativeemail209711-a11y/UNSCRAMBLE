@@ -1,3 +1,8 @@
+# WORD SHUFFLE 9 - what is new
+- **62 extra categories (~5,000 answers)** in `data/puzzles.extra.json`, e.g. TOOLS AND EQUIPMENT, HEALTH AND MEDICINE, FESTIVALS AND CELEBRATIONS, KITCHEN AND COOKWARE, FURNITURE AND HOME, GARDENING AND FARMING, INSECTS AND BUGS, REPTILES AND AMPHIBIANS, TREES AND PLANTS, GEMS AND MINERALS, CHEMICAL ELEMENTS, WEATHER AND NATURE, EMOTIONS AND FEELINGS, HOBBIES AND CRAFTS, SPORTS EQUIPMENT, COMPUTERS AND TECHNOLOGY, SOCIAL MEDIA AND INTERNET, CARS AND VEHICLES, AIRPORT AND TRAVEL, MALAYSIAN FOOD, MALAYSIA AND ASIA, FAIRY TALES AND STORIES, FAMOUS INVENTIONS, MONEY AND BANKING and many more. Tick/untick them in 🗂 Categories.
+- **Max 2 rows** for long / multi-word puzzles (see "Max-two-rows rule" below).
+- Add your own: edit a file in `tools/new_categories/` and run `python3 tools/add_categories.py`, or edit `data/puzzles.extra.json` directly (letters and spaces only).
+
 # WORD SHUFFLE 8 - what is new
 
 ## ⏭ Auto next round (⚙️ -> ⏭ Next Round)
@@ -101,8 +106,8 @@ Change anything in Look / Layout / Game / Categories - nothing is applied until 
 - **⭐ Save & Apply as Default** - same, and also stores them as your defaults (look on this device, game + categories on the server in `data/defaults.json`).
 - ✕ closes the panel and discards unsaved changes. Admin tab: reset to *my saved defaults* or to *factory settings*.
 
-## One-row rule (strict)
-Scrambled letters, revealed answers, hint letters, the category banner and the winner word are always shown in ONE row. Tiles are sized from the row width, so long answers get smaller tiles instead of wrapping. Keep "Max letters" around 20 or lower for comfortable reading (default 20, max 25).
+## Max-two-rows rule
+Puzzles are shown in ONE row when they fit nicely. A long or multi-word answer is split **between words** into **at most 2 rows** - never 3 or more, and words are never broken. This applies to the scrambled letters, the revealed answer, the hint line and the winner word. Tiles are sized from the available width/height, so everything always fits. "Max letters" now goes up to 30 (default still 20).
 
 ## Categories
 🗂 opens the category picker: **Random mix** (all ticked categories) or **Specific** (only the ones you pick; pick one to lock it).
